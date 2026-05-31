@@ -8,7 +8,7 @@ It implements all original functionality plus some extra functionality, includin
 * **Triangle support and loading from OBJ:** tri.h, mesh.h
 * **A window and primitive GUI system using SDL3:** window.h, gui/\*
 
-![Example Image]()
+<img src="example.png" alt="drawing" width="500"/>
 
 **Notes:**
 The GUI system is relatively primitive and requires manual positioning within the window, this would be the main thing I would change in the future.
