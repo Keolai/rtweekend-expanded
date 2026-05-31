@@ -13,3 +13,6 @@ It implements all original functionality plus some extra functionality, includin
 **Notes:**
 The GUI system is relatively primitive and requires manual positioning within the window, this would be the main thing I would change in the future.
 The makefile is also configured for Mac where SDL3 was installed using homebrew. This should be modified for any other system or configuration.
+
+**Sources:**
+[_Ray Tracing in One Weekend_](https://raytracing.github.io/books/RayTracingInOneWeekend.html)
