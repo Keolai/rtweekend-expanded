@@ -15,7 +15,7 @@ public:
     int image_width = 100;      // Rendered image width in pixel count
     int samples_per_pixel = 10; // Count of random samples for each pixel
     int max_depth = 10;         // Maximum number of ray bounces into scene
-    light world_light = light(point3(0, 10, -4), color(1, 1, 1));
+    light world_light = light(point3(0, 10, 0), color(1, 1, 1)); //default light
 
     double vfov = 90;                  // Vertical view angle (field of view)
     point3 lookfrom = point3(0, 0, 0); // Point camera is looking from
@@ -58,6 +58,10 @@ public:
         int tmp_image_height = int(image_width / aspect_ratio);
         tmp_image_height = (tmp_image_height < 1) ? 1 : tmp_image_height;
         return tmp_image_height;
+    }
+
+    void set_light(light new_light){
+        world_light = new_light;
     }
 
 private:
@@ -150,7 +154,7 @@ private:
             color shadow = color(1,1,1);
             hit_record shadow_rec;
             vec3 to_light = world_light.origin() - rec.p;
-            ray light_direction = ray(rec.p + 0.001 * rec.normal, to_light); // maybe?
+            ray light_direction = ray(rec.p + 0.001 * rec.normal, unit_vector(to_light)); // to_light needs to be
             if (world.hit(light_direction, interval(0.001, to_light.length()), shadow_rec))
             { 
                 shadow = color(0.5,0.5,0.5);
@@ -159,6 +163,7 @@ private:
             color attenuation;
             if (rec.mat->scatter(r, rec, attenuation, scattered))
                 return attenuation * ray_color(scattered, depth - 1, world) * shadow;
+                //return rec.normal;
             return color(0, 0, 0);
         }
 

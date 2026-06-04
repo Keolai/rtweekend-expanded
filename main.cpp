@@ -122,7 +122,7 @@ int main()
     auto mat = make_shared<lambertian>(color(0.8, 0.8, 0.0)); // world material
     mesh Model = mesh("models/utah_teapot(2).obj", met);
     Model.load_model(world);
-
+    //world.add(make_shared<sphere>(point3(0,2,0), 2.0, met));
     world.add(make_shared<sphere>(point3(0.0, -100.5, -1.0), 100.0, mat));
     // //* END OF WORLD DEFINITION *//
 
@@ -141,6 +141,8 @@ int main()
     cam.lookfrom = point3(1, 3, 5);
     cam.lookat = point3(0, 0, -2);
     cam.vup = vec3(0, 1, 0);
+
+    cam.set_light(light(point3(0,10,-4), color(1,1,1)));
 
     // window stuff
     window win = window(cam.get_height(), cam.image_width);
