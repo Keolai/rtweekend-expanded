@@ -156,7 +156,7 @@ int main()
                       { write_to_file(cam.image_width, cam.get_height()); });
 
     populate_gui_start_state(cam);
-    printf("meow meow moew\n");
+   // printf("meow meow moew\n");
     cam.render(*world_bvh, color_buffer, win);
     while (!win.poll_for_event())
     {

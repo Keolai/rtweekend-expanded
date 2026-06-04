@@ -4,6 +4,7 @@
 #include "hittable.h"
 #include "material.h"
 #include "window.h"
+#include "light.h"
 
 class camera
 {
@@ -14,6 +15,7 @@ public:
     int image_width = 100;      // Rendered image width in pixel count
     int samples_per_pixel = 10; // Count of random samples for each pixel
     int max_depth = 10;         // Maximum number of ray bounces into scene
+    light world_light = light(point3(0, 10, -4), color(1, 1, 1));
 
     double vfov = 90;                  // Vertical view angle (field of view)
     point3 lookfrom = point3(0, 0, 0); // Point camera is looking from
@@ -38,14 +40,17 @@ public:
                     ray r = get_ray(i, j);
                     pixel_color += ray_color(r, max_depth, world);
                 }
-                    color_buffer[(j * image_width) + i] = (pixel_samples_scale * pixel_color);
+                color_buffer[(j * image_width) + i] = (pixel_samples_scale * pixel_color);
             }
-            if (j % 10 == 0){
-                if (win.display_color_array(color_buffer)){ //should return if done
+            if (j % 10 == 0)
+            {
+                if (win.display_color_array(color_buffer))
+                { // should return if done
                     return;
                 }
             }
         }
+        std::clog << "\rDone.                 \n";
     }
 
     int get_height()
@@ -140,18 +145,27 @@ private:
             return color(0, 0, 0);
         hit_record rec;
 
-        if (world.hit(r, interval(0.001, infinity), rec))
+        if (world.hit(r, interval(0.001, infinity), rec)) //ray hit something
         {
+            color shadow = color(1,1,1);
+            hit_record shadow_rec;
+            vec3 to_light = world_light.origin() - rec.p;
+            ray light_direction = ray(rec.p + 0.001 * rec.normal, to_light); // maybe?
+            if (world.hit(light_direction, interval(0.001, to_light.length()), shadow_rec))
+            { 
+                shadow = color(0.5,0.5,0.5);
+            }
             ray scattered;
             color attenuation;
             if (rec.mat->scatter(r, rec, attenuation, scattered))
-                return attenuation * ray_color(scattered, depth - 1, world);
+                return attenuation * ray_color(scattered, depth - 1, world) * shadow;
             return color(0, 0, 0);
         }
 
         vec3 unit_direction = unit_vector(r.direction());
         auto a = 0.5 * (unit_direction.y() + 1.0);
-        return (1.0 - a) * color(1.0, 1.0, 1.0) + a * color(0.5, 0.7, 1.0);
+
+        return (1.0 - a) * color(1.0, 1.0, 1.0) + a * color(0.5, 0.7, 1.0); // this is the sky/light color/ray did not hit
     }
 };
 
