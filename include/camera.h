@@ -151,18 +151,18 @@ private:
 
         if (world.hit(r, interval(0.001, infinity), rec)) //ray hit something
         {
-            color shadow = color(1,1,1);
-            hit_record shadow_rec;
-            vec3 to_light = world_light.origin() - rec.p;
-            ray light_direction = ray(rec.p + 0.001 * rec.normal, unit_vector(to_light)); // to_light needs to be
-            if (world.hit(light_direction, interval(0.001, to_light.length()), shadow_rec))
-            { 
-                shadow = color(0.5,0.5,0.5);
-            }
+            // color shadow = color(1,1,1);
+            // hit_record shadow_rec;
+            // vec3 to_light = world_light.origin() - rec.p;
+            // ray light_direction = ray(rec.p + 0.001 * rec.normal, unit_vector(to_light)); // to_light needs to be
+            // if (world.hit(light_direction, interval(0.001, to_light.length()), shadow_rec))
+            // { 
+            //     shadow = color(0.5,0.5,0.5);
+            // }
             ray scattered;
             color attenuation;
             if (rec.mat->scatter(r, rec, attenuation, scattered))
-                return attenuation * ray_color(scattered, depth - 1, world) * shadow;
+                return attenuation * ray_color(scattered, depth - 1, world) * ray_shadow(world,r, rec);
                 //return rec.normal;
             return color(0, 0, 0);
         }
@@ -171,6 +171,29 @@ private:
         auto a = 0.5 * (unit_direction.y() + 1.0);
 
         return (1.0 - a) * color(1.0, 1.0, 1.0) + a * color(0.5, 0.7, 1.0); // this is the sky/light color/ray did not hit
+    }
+
+    color ray_shadow(const hittable &world, const ray &r, hit_record &rec) const {
+        color shadow = color(1,1,1);
+        hit_record shadow_rec;
+        int blur_intensity = 0.5;
+
+        int samples = 10;
+        float sample_scale = 1./samples;
+        float shadow_intensity = 0; //1.0 is most intense
+
+        for (int i = 0; i < samples; i++){
+            vec3 jitter = random_on_hemisphere(rec.normal) * blur_intensity;
+            vec3 to_light = (world_light.origin() + jitter)- rec.p;
+            ray light_direction = ray(rec.p + 0.001 * rec.normal, unit_vector(to_light)); // to_light needs to be
+            if (world.hit(light_direction, interval(0.001, to_light.length()), shadow_rec))
+            { 
+                shadow_intensity += 1;
+            }
+
+
+        }
+        return shadow - ((shadow_intensity * sample_scale) * color(vec3(0.5)));
     }
 };
 
