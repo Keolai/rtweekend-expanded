@@ -176,16 +176,27 @@ private:
     color ray_shadow(const hittable &world, const ray &r, hit_record &rec) const {
         color shadow = color(1,1,1);
         hit_record shadow_rec;
-        int blur_intensity = 0.5;
+        //int blur_intensity = 0.5;
 
-        int samples = 10;
+        int samples = 5;
         float sample_scale = 1./samples;
         float shadow_intensity = 0; //1.0 is most intense
 
+        float length_of_ray = 1; //idkkk
+        vec3 to_light = (world_light.origin())- rec.p;
+        ray light_direction = ray(rec.p + 0.001 * rec.normal, unit_vector(to_light)); 
+
+        //this is to prepare for the penumbra size... the smaller the the ray between the origin and end of a shadow ray
+        //the sharper the shadow should be 
+        if (world.hit(light_direction, interval(0.001, to_light.length()), shadow_rec))
+            { 
+                length_of_ray = (shadow_rec.p - rec.p).length();
+            }
+
         for (int i = 0; i < samples; i++){
-            vec3 jitter = random_on_hemisphere(rec.normal) * blur_intensity;
-            vec3 to_light = (world_light.origin() + jitter)- rec.p;
-            ray light_direction = ray(rec.p + 0.001 * rec.normal, unit_vector(to_light)); // to_light needs to be
+            vec3 jitter = random_on_hemisphere(rec.normal) * 2 * std::log10(length_of_ray);
+            to_light = (world_light.origin() + jitter)- rec.p;
+            light_direction = ray(rec.p + 0.001 * rec.normal, unit_vector(to_light)); // to_light needs to be
             if (world.hit(light_direction, interval(0.001, to_light.length()), shadow_rec))
             { 
                 shadow_intensity += 1;
