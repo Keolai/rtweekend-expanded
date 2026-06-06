@@ -18,6 +18,7 @@ public:
     int max_depth = 10;         // Maximum number of ray bounces into scene
     int shadow_samples = 5;
     std::vector<light> lights;
+    color ambient_light = color(0.3);
     // light world_light = light(point3(0, 10, 0), color(1, 1, 1)); //default light
 
     double vfov = 90;                  // Vertical view angle (field of view)
@@ -193,7 +194,7 @@ private:
                 }
             }
         }
-        return color(1.) - ((occlusion * occlusion_scale * lights_scale) * color(vec3(0.7)));
+        return  color(std::max(1. - (occlusion * occlusion_scale * lights_scale),0.)) + ambient_light;
     }
 };
 

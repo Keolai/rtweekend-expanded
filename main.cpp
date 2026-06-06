@@ -153,9 +153,9 @@ int main()
 
     // buttons
     win.create_button(5, 50, 50, 20, "Render", [&]()
-                      { render(cam, *world_bvh, win, 1,2); });
+                      { render(cam, *world_bvh, win, 1,3); });
     win.create_button(5, 75, 75, 20, "HD Render", [&]()
-                      { render(cam, *world_bvh, win, 25,7); });
+                      { render(cam, *world_bvh, win, 25,8); });
     win.create_button(5, cam.get_height() - 25, 50, 20, "Save!", [&]()
                       { write_to_file(cam.image_width, cam.get_height()); });
 
