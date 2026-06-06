@@ -179,41 +179,30 @@ private:
 
     color ray_shadow(const hittable &world, const ray &r, hit_record &rec) const
     {
-        color shadow = color(1, 1, 1);
         hit_record shadow_rec;
-        // int blur_intensity = 0.5;
 
-        //int samples = 5;
-        float sample_scale = 1. / shadow_samples;
-        float shadow_intensity = 0; // 1.0 is most intense
+        float occlusion_scale = 1. / shadow_samples;
+        float occlusion = 0;
         float lights_scale = 1. / lights.size();
 
         for (int i = 0; i < lights.size(); i++)
         {
             light world_light = lights[i];
-            float length_of_ray = 1; // idkkk
             vec3 to_light = (world_light.origin()) - rec.p;
             ray light_direction = ray(rec.p + 0.001 * rec.normal, unit_vector(to_light));
 
-            // this is to prepare for the penumbra size... the smaller the the ray between the origin and end of a shadow ray
-            // the sharper the shadow should be
-            if (world.hit(light_direction, interval(0.001, to_light.length()), shadow_rec))
-            {
-                length_of_ray = (shadow_rec.p - rec.p).length();
-            }
-
             for (int i = 0; i < shadow_samples; i++)
             {
-                vec3 jitter = random_on_hemisphere(rec.normal) * 2 * std::log10(length_of_ray);
+                vec3 jitter = random_in_unit_disk() * world_light.get_radius();
                 to_light = (world_light.origin() + jitter) - rec.p;
                 light_direction = ray(rec.p + 0.001 * rec.normal, unit_vector(to_light)); // to_light needs to be
                 if (world.hit(light_direction, interval(0.001, to_light.length()), shadow_rec))
                 {
-                    shadow_intensity += 1;
+                    occlusion += 1;
                 }
             }
         }
-        return shadow - ((shadow_intensity * sample_scale * lights_scale) * color(vec3(0.5)));
+        return color(1.) - ((occlusion * occlusion_scale * lights_scale) * color(vec3(0.7)));
     }
 };
 

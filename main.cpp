@@ -144,7 +144,7 @@ int main()
     cam.vup = vec3(0, 1, 0);
 
     cam.add_light(light(point3(0,10,-4), color(1,1,1)));
-    cam.add_light(light(point3(3,5,0), color(1)));
+    //cam.add_light(light(point3(3,5,0), color(1)));
 
     // window stuff
     window win = window(cam.get_height(), cam.image_width);
