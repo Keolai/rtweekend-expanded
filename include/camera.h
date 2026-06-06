@@ -193,7 +193,7 @@ private:
 
             for (int i = 0; i < shadow_samples; i++)
             {
-                vec3 jitter = random_in_unit_disk() * world_light.get_radius();
+                vec3 jitter = random_in_unit_sphere() * world_light.get_radius();
                 to_light = (world_light.origin() + jitter) - rec.p;
                 light_direction = ray(rec.p + 0.001 * rec.normal, unit_vector(to_light)); // to_light needs to be
                 if (world.hit(light_direction, interval(0.001, to_light.length()), shadow_rec))
