@@ -67,7 +67,7 @@ void gui_setup(window &win, int height)
     win.create_text(72, height - 30, ".ppm");
 }
 
-void render(camera &cam, hittable &world, window &win, int samples)
+void render(camera &cam, hittable &world, window &win, int samples, int shadow_samples)
 {
     float input_floats[6];
 
@@ -90,6 +90,7 @@ void render(camera &cam, hittable &world, window &win, int samples)
     }
 
     cam.samples_per_pixel = samples;
+    cam.shadow_samples = shadow_samples;
     cam.lookfrom = vec3(input_floats[0], input_floats[1], input_floats[2]);
     cam.lookat = vec3(input_floats[3], input_floats[4], input_floats[5]);
     cam.render(world, color_buffer, win);
@@ -142,7 +143,8 @@ int main()
     cam.lookat = point3(0, 0, -2);
     cam.vup = vec3(0, 1, 0);
 
-    cam.set_light(light(point3(0,10,-4), color(1,1,1)));
+    cam.add_light(light(point3(0,10,-4), color(1,1,1)));
+    cam.add_light(light(point3(3,5,0), color(1)));
 
     // window stuff
     window win = window(cam.get_height(), cam.image_width);
@@ -151,9 +153,9 @@ int main()
 
     // buttons
     win.create_button(5, 50, 50, 20, "Render", [&]()
-                      { render(cam, *world_bvh, win, 1); });
+                      { render(cam, *world_bvh, win, 1,2); });
     win.create_button(5, 75, 75, 20, "HD Render", [&]()
-                      { render(cam, *world_bvh, win, 25); });
+                      { render(cam, *world_bvh, win, 25,7); });
     win.create_button(5, cam.get_height() - 25, 50, 20, "Save!", [&]()
                       { write_to_file(cam.image_width, cam.get_height()); });
 

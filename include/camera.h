@@ -5,6 +5,7 @@
 #include "material.h"
 #include "window.h"
 #include "light.h"
+#include <vector>
 
 class camera
 {
@@ -15,7 +16,9 @@ public:
     int image_width = 100;      // Rendered image width in pixel count
     int samples_per_pixel = 10; // Count of random samples for each pixel
     int max_depth = 10;         // Maximum number of ray bounces into scene
-    light world_light = light(point3(0, 10, 0), color(1, 1, 1)); //default light
+    int shadow_samples = 5;
+    std::vector<light> lights;
+    // light world_light = light(point3(0, 10, 0), color(1, 1, 1)); //default light
 
     double vfov = 90;                  // Vertical view angle (field of view)
     point3 lookfrom = point3(0, 0, 0); // Point camera is looking from
@@ -60,8 +63,9 @@ public:
         return tmp_image_height;
     }
 
-    void set_light(light new_light){
-        world_light = new_light;
+    void add_light(light new_light)
+    {
+        lights.push_back(new_light);
     }
 
 private:
@@ -149,21 +153,21 @@ private:
             return color(0, 0, 0);
         hit_record rec;
 
-        if (world.hit(r, interval(0.001, infinity), rec)) //ray hit something
+        if (world.hit(r, interval(0.001, infinity), rec)) // ray hit something
         {
             // color shadow = color(1,1,1);
             // hit_record shadow_rec;
             // vec3 to_light = world_light.origin() - rec.p;
             // ray light_direction = ray(rec.p + 0.001 * rec.normal, unit_vector(to_light)); // to_light needs to be
             // if (world.hit(light_direction, interval(0.001, to_light.length()), shadow_rec))
-            // { 
+            // {
             //     shadow = color(0.5,0.5,0.5);
             // }
             ray scattered;
             color attenuation;
             if (rec.mat->scatter(r, rec, attenuation, scattered))
-                return attenuation * ray_color(scattered, depth - 1, world) * ray_shadow(world,r, rec);
-                //return rec.normal;
+                return attenuation * ray_color(scattered, depth - 1, world) * ray_shadow(world, r, rec);
+            // return rec.normal;
             return color(0, 0, 0);
         }
 
@@ -173,38 +177,43 @@ private:
         return (1.0 - a) * color(1.0, 1.0, 1.0) + a * color(0.5, 0.7, 1.0); // this is the sky/light color/ray did not hit
     }
 
-    color ray_shadow(const hittable &world, const ray &r, hit_record &rec) const {
-        color shadow = color(1,1,1);
+    color ray_shadow(const hittable &world, const ray &r, hit_record &rec) const
+    {
+        color shadow = color(1, 1, 1);
         hit_record shadow_rec;
-        //int blur_intensity = 0.5;
+        // int blur_intensity = 0.5;
 
-        int samples = 5;
-        float sample_scale = 1./samples;
-        float shadow_intensity = 0; //1.0 is most intense
+        //int samples = 5;
+        float sample_scale = 1. / shadow_samples;
+        float shadow_intensity = 0; // 1.0 is most intense
+        float lights_scale = 1. / lights.size();
 
-        float length_of_ray = 1; //idkkk
-        vec3 to_light = (world_light.origin())- rec.p;
-        ray light_direction = ray(rec.p + 0.001 * rec.normal, unit_vector(to_light)); 
+        for (int i = 0; i < lights.size(); i++)
+        {
+            light world_light = lights[i];
+            float length_of_ray = 1; // idkkk
+            vec3 to_light = (world_light.origin()) - rec.p;
+            ray light_direction = ray(rec.p + 0.001 * rec.normal, unit_vector(to_light));
 
-        //this is to prepare for the penumbra size... the smaller the the ray between the origin and end of a shadow ray
-        //the sharper the shadow should be 
-        if (world.hit(light_direction, interval(0.001, to_light.length()), shadow_rec))
-            { 
+            // this is to prepare for the penumbra size... the smaller the the ray between the origin and end of a shadow ray
+            // the sharper the shadow should be
+            if (world.hit(light_direction, interval(0.001, to_light.length()), shadow_rec))
+            {
                 length_of_ray = (shadow_rec.p - rec.p).length();
             }
 
-        for (int i = 0; i < samples; i++){
-            vec3 jitter = random_on_hemisphere(rec.normal) * 2 * std::log10(length_of_ray);
-            to_light = (world_light.origin() + jitter)- rec.p;
-            light_direction = ray(rec.p + 0.001 * rec.normal, unit_vector(to_light)); // to_light needs to be
-            if (world.hit(light_direction, interval(0.001, to_light.length()), shadow_rec))
-            { 
-                shadow_intensity += 1;
+            for (int i = 0; i < shadow_samples; i++)
+            {
+                vec3 jitter = random_on_hemisphere(rec.normal) * 2 * std::log10(length_of_ray);
+                to_light = (world_light.origin() + jitter) - rec.p;
+                light_direction = ray(rec.p + 0.001 * rec.normal, unit_vector(to_light)); // to_light needs to be
+                if (world.hit(light_direction, interval(0.001, to_light.length()), shadow_rec))
+                {
+                    shadow_intensity += 1;
+                }
             }
-
-
         }
-        return shadow - ((shadow_intensity * sample_scale) * color(vec3(0.5)));
+        return shadow - ((shadow_intensity * sample_scale * lights_scale) * color(vec3(0.5)));
     }
 };
 
