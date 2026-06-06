@@ -155,19 +155,10 @@ private:
 
         if (world.hit(r, interval(0.001, infinity), rec)) // ray hit something
         {
-            // color shadow = color(1,1,1);
-            // hit_record shadow_rec;
-            // vec3 to_light = world_light.origin() - rec.p;
-            // ray light_direction = ray(rec.p + 0.001 * rec.normal, unit_vector(to_light)); // to_light needs to be
-            // if (world.hit(light_direction, interval(0.001, to_light.length()), shadow_rec))
-            // {
-            //     shadow = color(0.5,0.5,0.5);
-            // }
             ray scattered;
             color attenuation;
             if (rec.mat->scatter(r, rec, attenuation, scattered))
                 return attenuation * ray_color(scattered, depth - 1, world) * ray_shadow(world, r, rec);
-            // return rec.normal;
             return color(0, 0, 0);
         }
 
