@@ -142,6 +142,14 @@ inline vec3 random_in_unit_sphere() {
 	}
 }
 
+inline vec3 clamp(const vec3& v, double min, double max){
+    vec3 tmp = vec3();
+    for (int i = 0; i < 3; i++){
+        tmp.e[i] = std::max(std::min(v.e[i],max),min);
+    }
+    return tmp;
+}
+
 inline vec3 reflect(const vec3& v, const vec3& n) { //n is normal v is ray 
     return v - 2*dot(v,n)*n;
 }

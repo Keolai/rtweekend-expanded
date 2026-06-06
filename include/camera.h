@@ -171,6 +171,9 @@ private:
 
     color ray_shadow(const hittable &world, const ray &r, hit_record &rec) const
     {
+        if (lights.empty()){
+            return color(1.0);
+        }
         hit_record shadow_rec;
 
         float occlusion_scale = 1. / shadow_samples;
@@ -194,7 +197,7 @@ private:
                 }
             }
         }
-        return  color(std::max(1. - (occlusion * occlusion_scale * lights_scale),0.)) + ambient_light;
+        return  clamp(color(1. - (occlusion * occlusion_scale * lights_scale)) + ambient_light,0.,1.);
     }
 };
 

@@ -119,7 +119,7 @@ int main()
 {
     //* DEFINE WORLD HERE *//
     hittable_list world;
-    auto met = make_shared<metal>(color(0.8, 0.8, 0.8), 1.0); // teapot material
+    auto met = make_shared<metal>(color(0.8, 0.8, 0.8), 0.4); // teapot material
     auto mat = make_shared<lambertian>(color(0.8, 0.8, 0.0)); // world material
     mesh Model = mesh("models/utah_teapot(2).obj", met);
     Model.load_model(world);
