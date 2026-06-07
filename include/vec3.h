@@ -150,6 +150,14 @@ inline vec3 clamp(const vec3& v, double min, double max){
     return tmp;
 }
 
+inline vec3 sqrt(const vec3& v){
+    vec3 tmp = vec3();
+    for (int i = 0; i < 3; i++){
+        tmp.e[i] = std::sqrt(v.e[1]);
+    }
+    return tmp;
+}
+
 inline vec3 reflect(const vec3& v, const vec3& n) { //n is normal v is ray 
     return v - 2*dot(v,n)*n;
 }

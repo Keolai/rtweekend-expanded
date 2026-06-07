@@ -143,7 +143,7 @@ int main()
     cam.lookat = point3(0, 0, -2);
     cam.vup = vec3(0, 1, 0);
 
-    cam.add_light(light(point3(0,10,-4), color(1,1,1)));
+    cam.add_light(light(point3(0,10,-4), color(1,1,1), 50));
     //cam.add_light(light(point3(3,5,0), color(1)));
 
     // window stuff

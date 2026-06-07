@@ -158,9 +158,16 @@ private:
         {
             ray scattered;
             color attenuation;
-            if (rec.mat->scatter(r, rec, attenuation, scattered))
-                return attenuation * ray_color(scattered, depth - 1, world) * ray_shadow(world, r, rec);
-            return color(0, 0, 0);
+            color direct =
+                ray_light(world, r, rec);
+
+            color indirect(0);
+
+            if (rec.mat->scatter(r, rec, attenuation, scattered)){
+                indirect = attenuation * ray_color(scattered, depth - 1, world);
+                // return clamp(direct + indirect,0,1);
+            }
+            return direct + indirect;
         }
 
         vec3 unit_direction = unit_vector(r.direction());
@@ -171,7 +178,8 @@ private:
 
     color ray_shadow(const hittable &world, const ray &r, hit_record &rec) const
     {
-        if (lights.empty()){
+        if (lights.empty())
+        {
             return color(1.0);
         }
         hit_record shadow_rec;
@@ -197,7 +205,44 @@ private:
                 }
             }
         }
-        return  clamp(color(1. - (occlusion * occlusion_scale * lights_scale)) + ambient_light,0.,1.);
+        return clamp(color(1. - (occlusion * occlusion_scale * lights_scale)) + ambient_light, 0., 1.);
+    }
+
+    color ray_light(const hittable &world, const ray &r, hit_record &rec) const
+    {
+        if (lights.empty())
+        {
+            return color(0.0);
+        }
+
+        hit_record shadow_rec;
+        color lighting = color(0.);
+
+        for (int i = 0; i < lights.size(); i++)
+        {
+            light world_light = lights[i];
+
+            for (int j = 0; j < shadow_samples; j++)
+            {
+                vec3 jitter = random_in_unit_sphere() * world_light.get_radius();
+                vec3 to_light = ((world_light.origin()) + jitter) - rec.p;
+                ray light_direction = ray(rec.p + 0.001 * rec.normal, unit_vector(to_light));
+
+                if (!world.hit(light_direction, interval(0.001, to_light.length()), shadow_rec)) // not blocked
+                {
+                    double NdotL =
+                        std::max(0.,
+                                 dot(rec.normal,
+                                     light_direction.direction()));
+
+                    lighting +=
+                        lights[i].get_color() * lights[i].power *
+                        NdotL /
+                        ((to_light.length() * to_light.length()) * shadow_samples);
+                }
+            }
+        }
+        return lighting;
     }
 };
 
