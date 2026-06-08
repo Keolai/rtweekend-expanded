@@ -12,6 +12,9 @@ class material {
     ) const {
         return false;
     }
+
+    virtual color get_albedo() 
+    { return color(1.0);}
 };
 
 class lambertian : public material {
@@ -28,8 +31,12 @@ class lambertian : public material {
 
 
         scattered = ray(rec.p, scatter_direction);
-        attenuation = albedo;
+        attenuation = albedo * 0.8;
         return true;
+    }
+
+    color get_albedo() override {
+      return albedo;
     }
 
   private:
@@ -45,8 +52,12 @@ class metal : public material {
         vec3 reflected = reflect(r_in.direction(), rec.normal);
         reflected = unit_vector(reflected) + (fuzz * random_unit_vector());
         scattered = ray(rec.p, reflected);
-        attenuation = albedo;
+        attenuation = albedo * 0.8;
         return (dot(scattered.direction(), rec.normal) > 0);
+    }
+
+    color get_albedo() override{
+      return albedo;
     }
 
   private:

@@ -67,7 +67,7 @@ void gui_setup(window &win, int height)
     win.create_text(72, height - 30, ".ppm");
 }
 
-void render(camera &cam, hittable &world, window &win, int samples)
+void render(camera &cam, hittable &world, window &win, int samples, int shadow_samples)
 {
     float input_floats[6];
 
@@ -90,6 +90,7 @@ void render(camera &cam, hittable &world, window &win, int samples)
     }
 
     cam.samples_per_pixel = samples;
+    cam.shadow_samples = shadow_samples;
     cam.lookfrom = vec3(input_floats[0], input_floats[1], input_floats[2]);
     cam.lookat = vec3(input_floats[3], input_floats[4], input_floats[5]);
     cam.render(world, color_buffer, win);
@@ -118,11 +119,11 @@ int main()
 {
     //* DEFINE WORLD HERE *//
     hittable_list world;
-    auto met = make_shared<metal>(color(0.8, 0.8, 0.8), 1.0); // teapot material
+    auto met = make_shared<metal>(color(0.8, 0.8, 0.8), 0.4); // teapot material
     auto mat = make_shared<lambertian>(color(0.8, 0.8, 0.0)); // world material
     mesh Model = mesh("models/utah_teapot(2).obj", met);
     Model.load_model(world);
-
+    //world.add(make_shared<sphere>(point3(0,2,0), 2.0, met));
     world.add(make_shared<sphere>(point3(0.0, -100.5, -1.0), 100.0, mat));
     // //* END OF WORLD DEFINITION *//
 
@@ -135,12 +136,15 @@ int main()
     cam.aspect_ratio = 16.0 / 9.0;
     cam.image_width = 400;
     cam.samples_per_pixel = 1;
-    cam.max_depth = 50;
+    cam.max_depth = 25;
 
     cam.vfov = 70;
     cam.lookfrom = point3(1, 3, 5);
     cam.lookat = point3(0, 0, -2);
     cam.vup = vec3(0, 1, 0);
+
+    cam.add_light(light(point3(0,10,-4), color(0.7,0.7,0.4), 50));
+    //cam.add_light(light(point3(3,5,0), color(1)));
 
     // window stuff
     window win = window(cam.get_height(), cam.image_width);
@@ -149,14 +153,14 @@ int main()
 
     // buttons
     win.create_button(5, 50, 50, 20, "Render", [&]()
-                      { render(cam, *world_bvh, win, 1); });
+                      { render(cam, *world_bvh, win, 1,3); });
     win.create_button(5, 75, 75, 20, "HD Render", [&]()
-                      { render(cam, *world_bvh, win, 25); });
+                      { render(cam, *world_bvh, win, 25,8); });
     win.create_button(5, cam.get_height() - 25, 50, 20, "Save!", [&]()
                       { write_to_file(cam.image_width, cam.get_height()); });
 
     populate_gui_start_state(cam);
-    printf("meow meow moew\n");
+   // printf("meow meow moew\n");
     cam.render(*world_bvh, color_buffer, win);
     while (!win.poll_for_event())
     {

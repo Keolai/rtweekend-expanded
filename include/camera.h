@@ -4,6 +4,8 @@
 #include "hittable.h"
 #include "material.h"
 #include "window.h"
+#include "light.h"
+#include <vector>
 
 class camera
 {
@@ -14,6 +16,10 @@ public:
     int image_width = 100;      // Rendered image width in pixel count
     int samples_per_pixel = 10; // Count of random samples for each pixel
     int max_depth = 10;         // Maximum number of ray bounces into scene
+    int shadow_samples = 5;
+    std::vector<light> lights;
+    color ambient_light = color(0.3);
+    // light world_light = light(point3(0, 10, 0), color(1, 1, 1)); //default light
 
     double vfov = 90;                  // Vertical view angle (field of view)
     point3 lookfrom = point3(0, 0, 0); // Point camera is looking from
@@ -38,14 +44,18 @@ public:
                     ray r = get_ray(i, j);
                     pixel_color += ray_color(r, max_depth, world);
                 }
-                    color_buffer[(j * image_width) + i] = (pixel_samples_scale * pixel_color);
+                color_buffer[(j * image_width) + i] = (pixel_samples_scale * pixel_color);
             }
-            if (j % 10 == 0){
-                if (win.display_color_array(color_buffer)){ //should return if done
+            if (j % 10 == 0)
+            {
+                if (win.display_color_array(color_buffer))
+                { // should return if done
                     return;
                 }
             }
         }
+        std::clog << "\rDone.                 \n";
+        win.display_color_array(color_buffer);
     }
 
     int get_height()
@@ -53,6 +63,11 @@ public:
         int tmp_image_height = int(image_width / aspect_ratio);
         tmp_image_height = (tmp_image_height < 1) ? 1 : tmp_image_height;
         return tmp_image_height;
+    }
+
+    void add_light(light new_light)
+    {
+        lights.push_back(new_light);
     }
 
 private:
@@ -140,18 +155,96 @@ private:
             return color(0, 0, 0);
         hit_record rec;
 
-        if (world.hit(r, interval(0.001, infinity), rec))
+        if (world.hit(r, interval(0.001, infinity), rec)) // ray hit something
         {
             ray scattered;
             color attenuation;
+            color direct =
+                ray_light(world, r, rec);
+
+            color indirect(0);
+
             if (rec.mat->scatter(r, rec, attenuation, scattered))
-                return attenuation * ray_color(scattered, depth - 1, world);
-            return color(0, 0, 0);
+            {
+                indirect = attenuation * ray_color(scattered, depth - 1, world);
+                // return clamp(direct + indirect,0,1);
+            }
+            return direct + indirect;
         }
 
         vec3 unit_direction = unit_vector(r.direction());
         auto a = 0.5 * (unit_direction.y() + 1.0);
-        return (1.0 - a) * color(1.0, 1.0, 1.0) + a * color(0.5, 0.7, 1.0);
+
+        return (1.0 - a) * color(1.0, 1.0, 1.0) + a * color(0.5, 0.7, 1.0); // this is the sky/light color/ray did not hit
+    }
+
+    color ray_shadow(const hittable &world, const ray &r, hit_record &rec) const
+    {
+        if (lights.empty())
+        {
+            return color(1.0);
+        }
+        hit_record shadow_rec;
+
+        float occlusion_scale = 1. / shadow_samples;
+        float occlusion = 0;
+        float lights_scale = 1. / lights.size();
+
+        for (int i = 0; i < lights.size(); i++)
+        {
+            light world_light = lights[i];
+            vec3 to_light = (world_light.origin()) - rec.p;
+            ray light_direction = ray(rec.p + 0.001 * rec.normal, unit_vector(to_light));
+
+            for (int i = 0; i < shadow_samples; i++)
+            {
+                vec3 jitter = random_in_unit_sphere() * world_light.get_radius();
+                to_light = (world_light.origin() + jitter) - rec.p;
+                light_direction = ray(rec.p + 0.001 * rec.normal, unit_vector(to_light)); // to_light needs to be
+                if (world.hit(light_direction, interval(0.001, to_light.length()), shadow_rec))
+                {
+                    occlusion += 1;
+                }
+            }
+        }
+        return clamp(color(1. - (occlusion * occlusion_scale * lights_scale)) + ambient_light, 0., 1.);
+    }
+
+    color ray_light(const hittable &world, const ray &r, hit_record &rec) const
+    {
+        if (lights.empty())
+        {
+            return color(0.0);
+        }
+
+        hit_record shadow_rec;
+        color lighting = color(0.);
+
+        for (int i = 0; i < lights.size(); i++)
+        {
+            light world_light = lights[i];
+
+            for (int j = 0; j < shadow_samples; j++)
+            {
+                vec3 jitter = random_in_unit_sphere() * world_light.get_radius();
+                vec3 to_light = ((world_light.origin()) + jitter) - rec.p;
+                ray light_direction = ray(rec.p + 0.001 * rec.normal, unit_vector(to_light));
+
+                if (!world.hit(light_direction, interval(0.001, to_light.length()), shadow_rec)) // not blocked
+                {
+                    double NdotL =
+                        std::max(0.,
+                                 dot(rec.normal,
+                                     light_direction.direction()));
+
+                    lighting +=
+                        rec.mat->get_albedo() * lights[i].get_color() * lights[i].power *
+                        NdotL /
+                        ((to_light.length() * to_light.length()) * shadow_samples);
+                }
+            }
+        }
+        return lighting;
     }
 };
 
