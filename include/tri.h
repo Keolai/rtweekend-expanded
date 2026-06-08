@@ -7,7 +7,10 @@ class tri : public hittable
 {
 public:
     tri(const std::array<point3, 3> &vertices, shared_ptr<material> mat)
-        : vertices(vertices), mat(mat) {}
+        : vertices(vertices), mat(mat) { normals_stored = false; }
+
+    tri(const std::array<point3, 3> &vertices, const std::array<point3, 3> &normals, shared_ptr<material> mat)
+        : vertices(vertices), mat(mat), normals(normals) { normals_stored = true; }
 
     bool hit(const ray &r, interval ray_t, hit_record &rec) const override
     {
@@ -46,7 +49,16 @@ public:
         if (ray_t.contains(t)) // Ray intersection !!
         {
             rec.p = r.at(t); // ray at point
-            rec.set_face_normal(r, normal);
+            if (!normals_stored)
+            { // just do flat shading
+                rec.set_face_normal(r, normal);
+                rec.set_geometry_normal(r,normal);
+            }
+            else
+            {
+                rec.set_face_normal(r,interpolated_normal(u,v));
+                rec.set_geometry_normal(r,normal);
+            }
             rec.t = t; // point where it hit
             rec.mat = mat;
             return true;
@@ -73,8 +85,19 @@ public:
         return aabb(min_point, max_point);
     }
 
+    vec3 interpolated_normal(double u, double v) const
+    {
+        double w = 1.0 - u - v;
+        return unit_vector(
+            w * normals[0] +
+            u * normals[1] +
+            v * normals[2]);
+    }
+
 private:
+    bool normals_stored;
     std::array<point3, 3> vertices;
+    std::array<point3, 3> normals;
     shared_ptr<material> mat;
 };
 

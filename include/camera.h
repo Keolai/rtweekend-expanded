@@ -194,13 +194,13 @@ private:
         {
             light world_light = lights[i];
             vec3 to_light = (world_light.origin()) - rec.p;
-            ray light_direction = ray(rec.p + 0.001 * rec.normal, unit_vector(to_light));
+            ray light_direction = ray(rec.p + 0.001 * rec.geometry_normal, unit_vector(to_light));
 
             for (int i = 0; i < shadow_samples; i++)
             {
                 vec3 jitter = random_in_unit_sphere() * world_light.get_radius();
                 to_light = (world_light.origin() + jitter) - rec.p;
-                light_direction = ray(rec.p + 0.001 * rec.normal, unit_vector(to_light)); // to_light needs to be
+                light_direction = ray(rec.p + 0.001 * rec.geometry_normal, unit_vector(to_light)); // to_light needs to be
                 if (world.hit(light_direction, interval(0.001, to_light.length()), shadow_rec))
                 {
                     occlusion += 1;
@@ -228,13 +228,13 @@ private:
             {
                 vec3 jitter = random_in_unit_sphere() * world_light.get_radius();
                 vec3 to_light = ((world_light.origin()) + jitter) - rec.p;
-                ray light_direction = ray(rec.p + 0.001 * rec.normal, unit_vector(to_light));
+                ray light_direction = ray(rec.p + 0.001 * rec.geometry_normal, unit_vector(to_light));
 
                 if (!world.hit(light_direction, interval(0.001, to_light.length()), shadow_rec)) // not blocked
                 {
                     double NdotL =
                         std::max(0.,
-                                 dot(rec.normal,
+                                 dot(rec.geometry_normal,
                                      light_direction.direction()));
 
                     lighting +=

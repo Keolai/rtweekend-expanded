@@ -9,6 +9,7 @@ class hit_record {
   public:
     point3 p;
     vec3 normal;
+    vec3 geometry_normal;
     shared_ptr<material> mat;
     double t;
     bool front_face;
@@ -19,6 +20,14 @@ class hit_record {
 
         front_face = dot(r.direction(), outward_normal) < 0;
         normal = front_face ? outward_normal : -outward_normal;
+    }
+
+    void set_geometry_normal(const ray& r, const vec3& outward_normal) {
+        // Sets the hit record normal vector.
+        // NOTE: the parameter `outward_normal` is assumed to have unit length.
+
+        front_face = dot(r.direction(), outward_normal) < 0;
+        geometry_normal = front_face ? outward_normal : -outward_normal;
     }
    
 };
