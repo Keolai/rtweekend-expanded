@@ -55,6 +55,7 @@ public:
             }
         }
         std::clog << "\rDone.                 \n";
+        win.display_color_array(color_buffer);
     }
 
     int get_height()
@@ -163,7 +164,8 @@ private:
 
             color indirect(0);
 
-            if (rec.mat->scatter(r, rec, attenuation, scattered)){
+            if (rec.mat->scatter(r, rec, attenuation, scattered))
+            {
                 indirect = attenuation * ray_color(scattered, depth - 1, world);
                 // return clamp(direct + indirect,0,1);
             }
