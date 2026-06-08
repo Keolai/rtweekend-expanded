@@ -7,7 +7,7 @@ It implements all original functionality plus some extra functionality, includin
 * **Ray Tracing acceleration through bounding volume hierarchy (BVH):** bvh.h, aabb.h, hittable.h
 * **Triangle support and loading from OBJ:** tri.h, mesh.h
 * **A window and primitive GUI system using SDL3:** window.h, gui/\*
-* **Shadows and support for multiple lights** light.h, camera.h
+* **Shadows and support for multiple lights:** light.h, camera.h
 
 <img src="example1.png" alt="drawing" width="500"/>
 
