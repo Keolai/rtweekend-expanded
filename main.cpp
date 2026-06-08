@@ -136,14 +136,14 @@ int main()
     cam.aspect_ratio = 16.0 / 9.0;
     cam.image_width = 400;
     cam.samples_per_pixel = 1;
-    cam.max_depth = 50;
+    cam.max_depth = 25;
 
     cam.vfov = 70;
     cam.lookfrom = point3(1, 3, 5);
     cam.lookat = point3(0, 0, -2);
     cam.vup = vec3(0, 1, 0);
 
-    cam.add_light(light(point3(0,10,-4), color(1,1,1), 50));
+    cam.add_light(light(point3(0,10,-4), color(0.7,0.7,0.4), 50));
     //cam.add_light(light(point3(3,5,0), color(1)));
 
     // window stuff

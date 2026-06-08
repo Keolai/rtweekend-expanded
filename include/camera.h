@@ -236,7 +236,7 @@ private:
                                      light_direction.direction()));
 
                     lighting +=
-                        lights[i].get_color() * lights[i].power *
+                        rec.mat->get_albedo() * lights[i].get_color() * lights[i].power *
                         NdotL /
                         ((to_light.length() * to_light.length()) * shadow_samples);
                 }
