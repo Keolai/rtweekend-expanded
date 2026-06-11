@@ -7,10 +7,14 @@ class tri : public hittable
 {
 public:
     tri(const std::array<point3, 3> &vertices, shared_ptr<material> mat)
-        : vertices(vertices), mat(mat) { normals_stored = false; }
+        : vertices(vertices), mat(mat) { normals_stored = false; textcoords_stored = false;}
 
     tri(const std::array<point3, 3> &vertices, const std::array<point3, 3> &normals, shared_ptr<material> mat)
-        : vertices(vertices), mat(mat), normals(normals) { normals_stored = true; }
+        : vertices(vertices), mat(mat), normals(normals) { normals_stored = true; textcoords_stored = false; }
+    
+    tri(const std::array<point3, 3> &vertices, const std::array<point3, 3> &normals,
+     const std::array<point3, 3> &UV, shared_ptr<material> mat)
+        : vertices(vertices), mat(mat), normals(normals), UV(UV) { normals_stored = true; textcoords_stored = true;}
 
     bool hit(const ray &r, interval ray_t, hit_record &rec) const override
     {
@@ -56,11 +60,12 @@ public:
             }
             else
             {
-                rec.set_face_normal(r,interpolated_normal(u,v));
+                rec.set_face_normal(r,unit_vector(interpolated_texture(u,v, normals)));
                 rec.set_geometry_normal(r,normal);
             }
             rec.t = t; // point where it hit
             rec.mat = mat;
+            rec.texture_sample_point = interpolated_texture(u,v, UV);
             return true;
         }
         else
@@ -85,19 +90,20 @@ public:
         return aabb(min_point, max_point);
     }
 
-    vec3 interpolated_normal(double u, double v) const
+    vec3 interpolated_texture(double u, double v, const std::array<point3, 3> &arr) const
     {
         double w = 1.0 - u - v;
-        return unit_vector(
-            w * normals[0] +
-            u * normals[1] +
-            v * normals[2]);
+        return w * arr[0] +
+            u * arr[1] +
+            v * arr[2];
     }
 
 private:
     bool normals_stored;
+    bool textcoords_stored;
     std::array<point3, 3> vertices;
     std::array<point3, 3> normals;
+    std::array<point3, 3> UV;
     shared_ptr<material> mat;
 };
 

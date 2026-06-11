@@ -119,9 +119,10 @@ int main()
 {
     //* DEFINE WORLD HERE *//
     hittable_list world;
-    auto met = make_shared<metal>(color(0.8, 0.8, 0.8), 0.4); // teapot material
+    auto met = make_shared<metal>(color(0.8, 0.8, 0.8), 0.1); // teapot material
     auto mat = make_shared<lambertian>(color(0.8, 0.8, 0.0)); // world material
-    mesh Model = mesh("models/utah_teapot(2).obj", met);
+    auto tex_mat = make_shared<textured_lambertian>(color(0.5),"models/textures/glorp.ppm");
+    mesh Model = mesh("models/utah_teapot(2).obj", tex_mat);
     Model.load_model(world);
     //world.add(make_shared<sphere>(point3(0,2,0), 2.0, met));
     world.add(make_shared<sphere>(point3(0.0, -100.5, -1.0), 100.0, mat));

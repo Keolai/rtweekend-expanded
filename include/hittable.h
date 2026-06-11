@@ -11,6 +11,7 @@ class hit_record {
     vec3 normal;
     vec3 geometry_normal;
     shared_ptr<material> mat;
+    vec3 texture_sample_point;
     double t;
     bool front_face;
 

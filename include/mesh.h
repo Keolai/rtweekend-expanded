@@ -14,6 +14,7 @@
 struct face_vertex
 {
     int v = -1;
+    int vt = -1;
     int vn = -1;
 };
 
@@ -35,6 +36,7 @@ public:
 
         std::vector<vec3> vertices;
         std::vector<vec3> normals;
+        std::vector<vec3> texcoords;
 
         std::string line;
 
@@ -48,7 +50,7 @@ public:
             std::string prefix;
             ss >> prefix;
 
-            //vertex pos
+            // vertex pos
             if (prefix == "v")
             {
                 double x, y, z;
@@ -57,7 +59,7 @@ public:
                 vertices.emplace_back(x, y, z);
             }
 
-           //normal
+            // normal
             else if (prefix == "vn")
             {
                 double x, y, z;
@@ -67,8 +69,19 @@ public:
                     unit_vector(vec3(x, y, z)));
             }
 
-        
-            //face
+            // UV
+            else if (prefix == "vt")
+            {
+                double u, v, w = 0.0;
+                ss >> u >> v;
+
+                if (!(ss >> w))
+                    w = 0.0;
+
+                texcoords.emplace_back(u, v, w);
+            }
+
+            // face
             else if (prefix == "f")
             {
                 std::vector<face_vertex> face;
@@ -78,7 +91,7 @@ public:
                 while (ss >> token)
                 {
                     face.push_back(
-                        parse_face_index(token,vertices.size(),normals.size()));
+                        parse_face_index(token, vertices.size(), texcoords.size(), normals.size()));
                 }
 
                 if (face.size() < 3)
@@ -91,6 +104,9 @@ public:
                     face_vertex fv1 = face[i];
                     face_vertex fv2 = face[i + 1];
 
+                    if (fv0.v < 0 || fv0.v >= vertices.size())
+                        continue;
+
                     point3 v0 = vertices[fv0.v];
                     point3 v1 = vertices[fv1.v];
                     point3 v2 = vertices[fv2.v];
@@ -100,7 +116,12 @@ public:
                         fv1.vn >= 0 &&
                         fv2.vn >= 0;
 
-                    if (has_normals)
+                    bool has_uvs =
+                        fv0.vt >= 0 &&
+                        fv1.vt >= 0 &&
+                        fv2.vt >= 0;
+
+                    if (has_normals && !has_uvs)
                     {
                         vec3 n0 = normals[fv0.vn];
                         vec3 n1 = normals[fv1.vn];
@@ -112,6 +133,26 @@ public:
                                     v0, v1, v2},
                                 std::array<vec3, 3>{
                                     n0, n1, n2},
+                                mat));
+                    }
+                    else if (has_normals && has_uvs)
+                    {
+                        vec3 n0 = normals[fv0.vn];
+                        vec3 n1 = normals[fv1.vn];
+                        vec3 n2 = normals[fv2.vn];
+
+                        vec3 uv0 = texcoords[fv0.vt];
+                        vec3 uv1 = texcoords[fv1.vt];
+                        vec3 uv2 = texcoords[fv2.vt];
+
+                        world.add(
+                            std::make_shared<tri>(
+                                std::array<point3, 3>{
+                                    v0, v1, v2},
+                                std::array<vec3, 3>{
+                                    n0, n1, n2},
+                                std::array<vec3, 3>{
+                                    uv0, uv1, uv2},
                                 mat));
                     }
                     else
@@ -130,28 +171,56 @@ public:
     }
 
 private:
-
-    face_vertex parse_face_index(const std::string &token,size_t vertex_count,
-    size_t normal_count)
+    face_vertex parse_face_index(
+        const std::string &token,
+        size_t vertex_count,
+        size_t texcoord_count,
+        size_t normal_count)
     {
-
         face_vertex result;
 
         std::stringstream ss(token);
-        std::string part;
+        std::string field;
 
         std::vector<std::string> fields;
 
-        while (std::getline(ss, part, '/'))
-            fields.push_back(part);
+        while (std::getline(ss, field, '/'))
+            fields.push_back(field);
 
+        //
         // vertex index
+        //
         if (!fields.empty() && !fields[0].empty())
-            result.v = std::stoi(fields[0]) - 1;
+        {
+            result.v =
+                resolve_index(
+                    std::stoi(fields[0]),
+                    vertex_count);
+        }
 
+        //
+        // texture coordinate index
+        //
+        if (fields.size() >= 2 &&
+            !fields[1].empty())
+        {
+            result.vt =
+                resolve_index(
+                    std::stoi(fields[1]),
+                    texcoord_count);
+        }
+
+        //
         // normal index
-        if (fields.size() >= 3 && !fields[2].empty())
-            result.vn = std::stoi(fields[2]) - 1;
+        //
+        if (fields.size() >= 3 &&
+            !fields[2].empty())
+        {
+            result.vn =
+                resolve_index(
+                    std::stoi(fields[2]),
+                    normal_count);
+        }
 
         return result;
     }
