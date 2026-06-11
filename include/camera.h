@@ -178,38 +178,7 @@ private:
         return (1.0 - a) * color(1.0, 1.0, 1.0) + a * color(0.5, 0.7, 1.0); // this is the sky/light color/ray did not hit
     }
 
-    color ray_shadow(const hittable &world, const ray &r, hit_record &rec) const
-    {
-        if (lights.empty())
-        {
-            return color(1.0);
-        }
-        hit_record shadow_rec;
-
-        float occlusion_scale = 1. / shadow_samples;
-        float occlusion = 0;
-        float lights_scale = 1. / lights.size();
-
-        for (int i = 0; i < lights.size(); i++)
-        {
-            light world_light = lights[i];
-            vec3 to_light = (world_light.origin()) - rec.p;
-            ray light_direction = ray(rec.p + 0.001 * rec.geometry_normal, unit_vector(to_light));
-
-            for (int i = 0; i < shadow_samples; i++)
-            {
-                vec3 jitter = random_in_unit_sphere() * world_light.get_radius();
-                to_light = (world_light.origin() + jitter) - rec.p;
-                light_direction = ray(rec.p + 0.001 * rec.geometry_normal, unit_vector(to_light)); // to_light needs to be
-                if (world.hit(light_direction, interval(0.001, to_light.length()), shadow_rec))
-                {
-                    occlusion += 1;
-                }
-            }
-        }
-        return clamp(color(1. - (occlusion * occlusion_scale * lights_scale)) + ambient_light, 0., 1.);
-    }
-
+    
     color ray_light(const hittable &world, const ray &r, hit_record &rec) const
     {
         if (lights.empty())
@@ -238,7 +207,7 @@ private:
                                      light_direction.direction()));
 
                     lighting +=
-                        rec.mat->get_albedo() * lights[i].get_color() * lights[i].power *
+                        rec.mat->get_albedo(shadow_rec) * lights[i].get_color() * lights[i].power *
                         NdotL /
                         ((to_light.length() * to_light.length()) * shadow_samples);
                 }

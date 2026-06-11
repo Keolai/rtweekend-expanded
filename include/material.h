@@ -14,7 +14,7 @@ class material {
         return false;
     }
 
-    virtual color get_albedo() 
+    virtual color get_albedo(const hit_record &rec) 
     { return color(1.0);}
 };
 
@@ -36,7 +36,7 @@ class lambertian : public material {
         return true;
     }
 
-    color get_albedo() override {
+    color get_albedo(const hit_record &rec) override {
       return albedo;
     }
 
@@ -64,9 +64,9 @@ class textured_lambertian : public material {
         return true;
     }
 
-    color get_albedo() override {
-      return albedo;
-      //return mat_texture.get_color_at_coordinate(rec.texture_sample_point.e[0], rec.texture_sample_point.e[1]);
+    color get_albedo(const hit_record &rec) override {
+      //return albedo;
+      return mat_texture.get_color_at_coordinate(rec.texture_sample_point.e[0], rec.texture_sample_point.e[1]);
     }
 
   private:
@@ -87,7 +87,7 @@ class metal : public material {
         return (dot(scattered.direction(), rec.normal) > 0);
     }
 
-    color get_albedo() override{
+    color get_albedo(const hit_record &rec) override{
       return albedo;
     }
 
