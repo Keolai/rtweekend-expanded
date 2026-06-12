@@ -15,7 +15,10 @@ class material {
     }
 
     virtual color get_albedo(const hit_record &rec) 
-    { return color(1.0);}
+    { return mat_texture.get_color_at_coordinate(rec.texture_sample_point.e[0], rec.texture_sample_point.e[1]);}
+
+  protected: 
+    texture mat_texture;
 };
 
 class lambertian : public material {
@@ -38,14 +41,6 @@ class lambertian : public material {
         attenuation = mat_texture.get_color_at_coordinate(rec.texture_sample_point.e[0], rec.texture_sample_point.e[1]) * 0.8;
         return true;
     }
-
-    color get_albedo(const hit_record &rec) override {
-      return mat_texture.get_color_at_coordinate(rec.texture_sample_point.e[0], rec.texture_sample_point.e[1]);
-    }
-
-  private:
-    texture mat_texture;
-    //color albedo;
 };
 
 class metal : public material {
@@ -62,19 +57,13 @@ class metal : public material {
         return (dot(scattered.direction(), rec.normal) > 0);
     }
 
-    color get_albedo(const hit_record &rec) override {
-      //return albedo;
-      return mat_texture.get_color_at_coordinate(rec.texture_sample_point.e[0], rec.texture_sample_point.e[1]);
-    }
-
   private:
-    texture mat_texture;
     double fuzz;
 };
 
 class dielectric : public material {
   public:
-    dielectric(double refraction_index) : refraction_index(refraction_index) {}
+    dielectric(double refraction_index) : refraction_index(refraction_index) {mat_texture = texture(color(1.0));}
 
     bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered)
     const override {
