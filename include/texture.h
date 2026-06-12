@@ -18,6 +18,10 @@ public:
         load_texture();
     }
 
+    texture(const color &albedo) : width(1), height(1) {
+        fake_texture(albedo);
+    }
+
     color get_color_at_coordinate(double u, double v) const
     {
         if (color_buffer.empty())
@@ -39,6 +43,10 @@ private:
     std::vector<color> color_buffer;
     int width;
     int height;
+
+    void fake_texture(color albedo){
+        color_buffer.push_back(albedo);
+    }
 
     bool load_texture()
     {
