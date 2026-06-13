@@ -25,10 +25,10 @@ public:
     color get_color_at_coordinate(double u, double v) const
     {
         if (color_buffer.empty())
-            return color(1, 0, 1); // debug magenta
-        //std::max(std::min(v.e[i],max),min);
-        u = std::min(std::max(u, 0.0), 1.0);
-        v = std::min(std::max(v, 0.0), 1.0);
+            return color(1, 0, 1); 
+
+        u = fmod(std::abs(u),1.);
+        v = fmod(std::abs(v),1.);
 
         v = 1.0 - v;
 
@@ -36,6 +36,7 @@ public:
         int y = static_cast<int>(v * (height - 1));
 
         return color_buffer[y * width + x];
+        //return color(u, 0, 0);
     }
 
 private:
