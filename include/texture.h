@@ -27,8 +27,10 @@ public:
         if (color_buffer.empty())
             return color(1, 0, 1); 
 
-        u = fmod(std::abs(u),1.);
-        v = fmod(std::abs(v),1.);
+        u = u - std::floor(u);
+        v = v - std::floor(v);
+        u = fmod(u,1.);
+        v = fmod(v,1.);
 
         v = 1.0 - v;
 

@@ -31,22 +31,17 @@ public:
         return false;
     }
 
-    // vec3 p = unit_vector(rec.p - center);
-
-    // double u = 0.5 + atan2(p.z(), p.x()) / (2.0 * pi);
-    // double v = 0.5 - asin(p.y()) / pi;
-
-    vec3 p = unit_vector(rec.p - center);
-
-    double u = 0.5 + atan2(p.z(), p.x()) / (2.0 * pi);
-    double v = 0.5 - asin(p.y()) / pi;
-    rec.texture_sample_point = vec3(u, v, 0.);
     rec.t = root;
     rec.p = r.at(rec.t);
     vec3 outward_normal = (rec.p - center) / radius;
     rec.set_face_normal(r, outward_normal);
     rec.set_geometry_normal(r, outward_normal);
     rec.mat = mat;
+    vec3 p = unit_vector(rec.p - center);
+
+    double u = 0.5 + atan2(p.z(), p.x()) / (2.0 * pi);
+    double v = 0.5 - asin(p.y()) / pi;
+    rec.texture_sample_point = vec3(u, v, 0.);
 
     return true;
   }
