@@ -4,6 +4,8 @@
 #include "hittable.h"
 #include "texture.h"
 
+//TODO: In materials without outside normal textures, add default texture.
+
 class material {
   public:
 
