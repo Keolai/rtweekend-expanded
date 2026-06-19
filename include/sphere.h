@@ -43,6 +43,20 @@ public:
     double v = 0.5 - asin(p.y()) / pi;
     rec.texture_sample_point = vec3(u, v, 0.);
 
+    vec3 T(-p.z(), 0, p.x());
+
+    T = unit_vector(T);
+
+    if (T.length_squared() < 1e-12)
+    {
+      // north/south pole
+      T = vec3(1, 0, 0);
+    }
+
+    vec3 B = unit_vector(cross(outward_normal, T));
+    rec.tangent = T;
+    rec.bitangent = B;
+
     return true;
   }
 

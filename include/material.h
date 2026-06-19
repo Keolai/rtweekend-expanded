@@ -6,6 +6,7 @@
 
 class material {
   public:
+
     virtual ~material() = default;
 
     virtual bool scatter(
@@ -19,6 +20,7 @@ class material {
 
   protected: 
     texture mat_texture;
+    texture normal_texture;
 };
 
 class lambertian : public material {
@@ -26,6 +28,11 @@ class lambertian : public material {
     lambertian(const color& albedo) { mat_texture = texture(albedo);}
     lambertian(const std::string &file_path) {
       mat_texture = texture(file_path);
+    }
+
+    lambertian(const std::string &file_path, const std::string &normal_path) {
+      mat_texture = texture(file_path);
+      normal_texture = texture(normal_path);
     }
 
     bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered)
@@ -47,6 +54,8 @@ class metal : public material {
   public:
     metal(const color& albedo, double fuzz) : fuzz(fuzz < 1 ? fuzz : 1) {mat_texture = texture(albedo);}
     metal(const std::string& file_path, double fuzz) : fuzz(fuzz < 1 ? fuzz : 1) {mat_texture = texture(file_path);}
+     metal(const std::string& file_path, double fuzz, const std::string &normal_path) : 
+     fuzz(fuzz < 1 ? fuzz : 1) {mat_texture = texture(file_path); normal_texture = texture(normal_path); }
 
     bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered)
     const override {

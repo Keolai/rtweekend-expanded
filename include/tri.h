@@ -7,14 +7,28 @@ class tri : public hittable
 {
 public:
     tri(const std::array<point3, 3> &vertices, shared_ptr<material> mat)
-        : vertices(vertices), mat(mat) { normals_stored = false; textcoords_stored = false;}
+        : vertices(vertices), mat(mat)
+    {
+        normals_stored = false;
+        textcoords_stored = false;
+    }
 
     tri(const std::array<point3, 3> &vertices, const std::array<point3, 3> &normals, shared_ptr<material> mat)
-        : vertices(vertices), mat(mat), normals(normals) { normals_stored = true; textcoords_stored = false; }
-    
+        : vertices(vertices), mat(mat), normals(normals)
+    {
+        normals_stored = true;
+        textcoords_stored = false;
+        tangent_space();
+    }
+
     tri(const std::array<point3, 3> &vertices, const std::array<point3, 3> &normals,
-     const std::array<point3, 3> &UV, shared_ptr<material> mat)
-        : vertices(vertices), mat(mat), normals(normals), UV(UV) { normals_stored = true; textcoords_stored = true;}
+        const std::array<point3, 3> &UV, shared_ptr<material> mat)
+        : vertices(vertices), mat(mat), normals(normals), UV(UV)
+    {
+        normals_stored = true;
+        textcoords_stored = true;
+        tangent_space();
+    }
 
     bool hit(const ray &r, interval ray_t, hit_record &rec) const override
     {
@@ -56,16 +70,17 @@ public:
             if (!normals_stored)
             { // just do flat shading
                 rec.set_face_normal(r, normal);
-                rec.set_geometry_normal(r,normal);
+                rec.set_geometry_normal(r, normal);
             }
             else
             {
-                rec.set_face_normal(r,unit_vector(interpolated_texture(u,v, normals)));
-                rec.set_geometry_normal(r,normal);
+                rec.set_face_normal(r, unit_vector(interpolated_texture(u, v, normals)));
+                rec.set_geometry_normal(r, normal);
             }
+            tangent_on_hit(rec.normal, rec);
             rec.t = t; // point where it hit
             rec.mat = mat;
-            rec.texture_sample_point = interpolated_texture(u,v, UV);
+            rec.texture_sample_point = interpolated_texture(u, v, UV);
             return true;
         }
         else
@@ -94,8 +109,8 @@ public:
     {
         double w = 1.0 - u - v;
         return w * arr[0] +
-            u * arr[1] +
-            v * arr[2];
+               u * arr[1] +
+               v * arr[2];
     }
 
 private:
@@ -104,7 +119,47 @@ private:
     std::array<point3, 3> vertices;
     std::array<point3, 3> normals;
     std::array<point3, 3> UV;
+    vec3 const_tangent;
+    vec3 const_bitangent;
     shared_ptr<material> mat;
+
+    void tangent_space()
+    {
+            vec3 edge1 = vertices.at(1) - vertices.at(0);
+            vec3 edge2 = vertices.at(2) - vertices.at(0);
+
+            vec3 deltaUV1 = UV.at(1) - UV.at(0);
+            vec3 deltaUV2 = UV.at(2) - UV.at(0);
+
+            double f =
+                1.0 /
+                (deltaUV1.x() * deltaUV2.y() - deltaUV2.x() * deltaUV1.y());
+
+            const_tangent =
+                unit_vector(f *
+                            (deltaUV2.y() * edge1 -
+                             deltaUV1.y() * edge2));
+
+            const_bitangent =
+                unit_vector(f *
+                            (-deltaUV2.x() * edge1 +
+                             deltaUV1.x() * edge2));
+    }
+
+    void tangent_on_hit(vec3 N, hit_record &rec) const
+    {
+        vec3 tangent =
+            unit_vector(
+                const_tangent -
+                dot(const_tangent, N) * N);
+
+        vec3 bitangent =
+            cross(N, tangent);
+        // Gram-Schmidt
+
+        rec.tangent = tangent;
+        rec.bitangent = bitangent;
+    }
 };
 
 #endif
