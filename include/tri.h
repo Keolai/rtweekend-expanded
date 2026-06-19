@@ -81,6 +81,9 @@ public:
             rec.t = t; // point where it hit
             rec.mat = mat;
             rec.texture_sample_point = interpolated_texture(u, v, UV);
+
+            find_world_tangent(r, rec);
+
             return true;
         }
         else
@@ -125,25 +128,25 @@ private:
 
     void tangent_space()
     {
-            vec3 edge1 = vertices.at(1) - vertices.at(0);
-            vec3 edge2 = vertices.at(2) - vertices.at(0);
+        vec3 edge1 = vertices.at(1) - vertices.at(0);
+        vec3 edge2 = vertices.at(2) - vertices.at(0);
 
-            vec3 deltaUV1 = UV.at(1) - UV.at(0);
-            vec3 deltaUV2 = UV.at(2) - UV.at(0);
+        vec3 deltaUV1 = UV.at(1) - UV.at(0);
+        vec3 deltaUV2 = UV.at(2) - UV.at(0);
 
-            double f =
-                1.0 /
-                (deltaUV1.x() * deltaUV2.y() - deltaUV2.x() * deltaUV1.y());
+        double f =
+            1.0 /
+            (deltaUV1.x() * deltaUV2.y() - deltaUV2.x() * deltaUV1.y());
 
-            const_tangent =
-                unit_vector(f *
-                            (deltaUV2.y() * edge1 -
-                             deltaUV1.y() * edge2));
+        const_tangent =
+            unit_vector(f *
+                        (deltaUV2.y() * edge1 -
+                         deltaUV1.y() * edge2));
 
-            const_bitangent =
-                unit_vector(f *
-                            (-deltaUV2.x() * edge1 +
-                             deltaUV1.x() * edge2));
+        const_bitangent =
+            unit_vector(f *
+                        (-deltaUV2.x() * edge1 +
+                         deltaUV1.x() * edge2));
     }
 
     void tangent_on_hit(vec3 N, hit_record &rec) const
@@ -159,6 +162,26 @@ private:
 
         rec.tangent = tangent;
         rec.bitangent = bitangent;
+    }
+
+    void find_world_tangent(const ray &r, hit_record &rec) const
+    {
+        color texel = mat->normal_texture.get_color_at_coordinate(rec.texture_sample_point.x(), rec.texture_sample_point.y());
+        vec3 tangent_normal(
+            2.0 * texel.x() - 1.0,
+            2.0 * texel.y() - 1.0,
+            2.0 * texel.z() - 1.0);
+
+        tangent_normal =
+            unit_vector(tangent_normal);
+
+        vec3 world_normal =
+            unit_vector(
+                tangent_normal.x() * rec.tangent +
+                tangent_normal.y() * rec.bitangent +
+                tangent_normal.z() * rec.normal);
+
+        rec.set_face_normal(r, world_normal);
     }
 };
 

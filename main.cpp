@@ -121,7 +121,7 @@ int main()
     hittable_list world;
     auto met = make_shared<metal>(color(0.8, 0.8, 0.8), 0.1); // teapot material
     auto mat = make_shared<lambertian>(color(0.8, 0.8, 0.0)); // world material
-    auto tex_mat = make_shared<lambertian>("models/textures/glorp.ppm");
+    auto tex_mat = make_shared<metal>(color(0.5),"models/textures/brick_normal.ppm",0.1);
     // mesh Model = mesh("models/utah_teapot(2).obj", tex_mat);
     // Model.load_model(world);
     world.add(make_shared<sphere>(point3(0,2,0), 2.0, tex_mat));

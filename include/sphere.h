@@ -57,6 +57,8 @@ public:
     rec.tangent = T;
     rec.bitangent = B;
 
+    find_world_tangent(r, rec);
+
     return true;
   }
 
@@ -73,6 +75,26 @@ private:
   point3 center;
   double radius;
   shared_ptr<material> mat;
+
+  void find_world_tangent(const ray &r, hit_record &rec) const
+  {
+    color texel = mat->normal_texture.get_color_at_coordinate(rec.texture_sample_point.x(), rec.texture_sample_point.y());
+    vec3 tangent_normal(
+        2.0 * texel.x() - 1.0,
+        2.0 * texel.y() - 1.0,
+        2.0 * texel.z() - 1.0);
+
+    tangent_normal =
+        unit_vector(tangent_normal);
+
+    vec3 world_normal =
+        unit_vector(
+            tangent_normal.x() * rec.tangent +
+            tangent_normal.y() * rec.bitangent +
+            tangent_normal.z() * rec.normal);
+
+    rec.set_face_normal(r, world_normal);
+  }
 };
 
 #endif
