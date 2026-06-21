@@ -82,7 +82,7 @@ public:
     mat_texture = texture(file_path);
     normal_texture = texture(normal_default);
   }
-  metal(const std::string &file_path, double fuzz, const std::string &normal_path) : fuzz(fuzz < 1 ? fuzz : 1)
+  metal(const std::string &file_path, const std::string &normal_path, double fuzz) : fuzz(fuzz < 1 ? fuzz : 1)
   {
     mat_texture = texture(file_path);
     normal_texture = texture(normal_path);
