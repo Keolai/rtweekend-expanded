@@ -54,4 +54,12 @@ color norm_to_rgb(const color& pixel_color){
     return vec3(rbyte,gbyte,bbyte);
 }
 
+inline color mix(color x, color y, double mix_amount){
+    double a = 1. - mix_amount;
+    double r = x.x() * a + y.x() * mix_amount;
+    double g = x.y() * a + y.y() * mix_amount;
+    double b = x.z() * a + y.z() * mix_amount;
+    return color(r,g,b);
+}
+
 #endif

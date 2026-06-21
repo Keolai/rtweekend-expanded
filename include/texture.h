@@ -29,16 +29,21 @@ public:
 
         u = u - std::floor(u);
         v = v - std::floor(v);
-        u = fmod(u,1.);
-        v = fmod(v,1.);
 
         v = 1.0 - v;
-
-        int x = static_cast<int>(u * (width - 1));
+        int x = static_cast<int>(u * (width - 1)); //it gets rounded down
         int y = static_cast<int>(v * (height - 1));
 
-        return color_buffer[y * width + x];
-        //return color(u, 0, 0);
+        double d_x = u * (width - 1) - (double) x;
+        double d_y = v * (height - 1) - (double) y;
+        double d_z = std::sqrt((d_x * d_x) + (d_y * d_y)); //distances
+
+        color color_x_one = color_buffer[y * width + x];
+        color color_x_two = color_buffer[y * width + (x + 1)];
+
+        color color_y_one = color_buffer[(y + 1) * width + x];
+        color color_y_two = color_buffer[(y + 1) * width + (x + 1)];
+        return mix(mix(color_x_one,color_x_two,d_x),mix(color_y_one,color_y_two,d_x),d_y);
     }
 
 private:
