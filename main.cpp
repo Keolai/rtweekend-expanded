@@ -144,7 +144,8 @@ int main()
     cam.lookat = point3(0, 0, -2);
     cam.vup = vec3(0, 1, 0);
 
-    cam.add_light(light(point3(0,10,-4), color(0.7,0.7,0.4), 50));
+    cam.add_light(std::make_shared<light>(point3(0,10,-4), color(0.7,0.7,0.4), 50));
+    //cam.add_light(std::make_shared<spot_light>(point3(0,10,0), color(0.7,0.7,0.4), 100, 0.22,0.27,vec3(0,-1,0)));
     //cam.add_light(light(point3(3,5,0), color(1)));
 
     // window stuff

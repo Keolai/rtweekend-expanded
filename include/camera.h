@@ -7,6 +7,8 @@
 #include "light.h"
 #include <vector>
 
+using std::shared_ptr;
+
 class camera
 {
 public:
@@ -17,7 +19,7 @@ public:
     int samples_per_pixel = 10; // Count of random samples for each pixel
     int max_depth = 10;         // Maximum number of ray bounces into scene
     int shadow_samples = 5;
-    std::vector<light> lights;
+    std::vector<std::shared_ptr<light>> lights;
     color ambient_light = color(0.3);
     // light world_light = light(point3(0, 10, 0), color(1, 1, 1)); //default light
 
@@ -65,7 +67,7 @@ public:
         return tmp_image_height;
     }
 
-    void add_light(light new_light)
+    void add_light(std::shared_ptr<light> new_light)
     {
         lights.push_back(new_light);
     }
@@ -191,27 +193,8 @@ private:
 
         for (int i = 0; i < lights.size(); i++)
         {
-            light world_light = lights[i];
 
-            for (int j = 0; j < shadow_samples; j++)
-            {
-                vec3 jitter = random_in_unit_sphere() * world_light.get_radius();
-                vec3 to_light = ((world_light.origin()) + jitter) - rec.p;
-                ray light_direction = ray(rec.p + 0.001 * rec.geometry_normal, unit_vector(to_light));
-
-                if (!world.hit(light_direction, interval(0.001, to_light.length()), shadow_rec)) // not blocked
-                {
-                    double NdotL =
-                        std::max(0.,
-                                 dot(rec.geometry_normal,
-                                     light_direction.direction()));
-
-                    lighting +=
-                        rec.mat->get_albedo(shadow_rec) * lights[i].get_color() * lights[i].power *
-                        NdotL /
-                        ((to_light.length() * to_light.length()) * shadow_samples);
-                }
-            }
+            lighting += lights[i]->light_hit(world, r, rec, shadow_samples);
         }
         return lighting;
     }
