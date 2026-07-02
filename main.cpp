@@ -121,10 +121,10 @@ int main()
     hittable_list world;
     auto met = make_shared<metal>(color(0.8, 0.8, 0.8), 0.1); // teapot material
     auto mat = make_shared<lambertian>(color(0.8, 0.8, 0.0)); // world material
-    auto tex_mat = make_shared<metal>("models/textures/glorp.ppm","models/textures/brick_normal.ppm",0.1);
-    // mesh Model = mesh("models/utah_teapot(2).obj", tex_mat);
-    // Model.load_model(world);
-    world.add(make_shared<sphere>(point3(0,2,0), 2.0, tex_mat));
+    auto tex_mat = make_shared<metal>("models/textures/checkered.ppm","models/textures/dirt.ppm",0.1);
+    mesh Model = mesh("models/utah_teapot(2).obj", tex_mat);
+    Model.load_model(world);
+    //world.add(make_shared<sphere>(point3(0,2,0), 2.0, tex_mat));
     world.add(make_shared<sphere>(point3(0.0, -100.5, -1.0), 100.0, mat));
     // //* END OF WORLD DEFINITION *//
 
@@ -143,9 +143,10 @@ int main()
     cam.lookfrom = point3(1, 3, 5);
     cam.lookat = point3(0, 0, -2);
     cam.vup = vec3(0, 1, 0);
+    cam.ambient = color(0.05);
 
-    cam.add_light(std::make_shared<light>(point3(0,10,-4), color(0.7,0.7,0.4), 50));
-    //cam.add_light(std::make_shared<spot_light>(point3(0,10,0), color(0.7,0.7,0.4), 100, 0.22,0.27,vec3(0,-1,0)));
+    //cam.add_light(std::make_shared<light>(point3(3,5,0), color(0.7,0.7,0.4), 50));
+    cam.add_light(std::make_shared<spot_light>(point3(0,10,0), color(0.7,0.7,0.4), 150, 0.22,0.3,vec3(0,-1,0)));
     //cam.add_light(light(point3(3,5,0), color(1)));
 
     // window stuff

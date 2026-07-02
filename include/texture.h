@@ -39,10 +39,10 @@ public:
         double d_z = std::sqrt((d_x * d_x) + (d_y * d_y)); //distances
 
         color color_x_one = color_buffer[y * width + x];
-        color color_x_two = color_buffer[y * width + (x + 1)];
+        color color_x_two = color_buffer[y * width + ((x + 1) % width)];
 
-        color color_y_one = color_buffer[(y + 1) * width + x];
-        color color_y_two = color_buffer[(y + 1) * width + (x + 1)];
+        color color_y_one = color_buffer[((y + 1) % height) * width + x];
+        color color_y_two = color_buffer[((y + 1) % height) * width + ((x + 1) % width)];
         return mix(mix(color_x_one,color_x_two,d_x),mix(color_y_one,color_y_two,d_x),d_y);
     }
 

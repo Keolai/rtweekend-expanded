@@ -30,6 +30,7 @@ public:
 
     double defocus_angle = 0; // Variation angle of rays through each pixel
     double focus_dist = 10;   // Distance from camera lookfrom point to plane of perfect focus
+    color ambient = color(0.1);
 
     void render(const hittable &world, std::vector<color> &color_buffer, window &win)
     {
@@ -168,7 +169,7 @@ private:
 
             if (rec.mat->scatter(r, rec, attenuation, scattered))
             {
-                indirect = attenuation * ray_color(scattered, depth - 1, world);
+                indirect = attenuation * ray_color(scattered, depth - 1, world) * ambient;
                 // return clamp(direct + indirect,0,1);
             }
             return direct + indirect;

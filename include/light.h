@@ -42,7 +42,7 @@ public:
         {
             double NdotL =
                 std::max(0.,
-                         dot(rec.geometry_normal,
+                         dot(rec.normal,
                              light_direction.direction()));
 
             lighting =
@@ -96,7 +96,7 @@ public:
         {
             double NdotL =
                 std::max(0.,
-                         dot(rec.geometry_normal,
+                         dot(rec.normal,
                              light_direction.direction()));
 
             vec3 wi = to_light / distance;
