@@ -121,6 +121,7 @@ int main()
     hittable_list world;
     auto met = make_shared<metal>(color(0.8, 0.8, 0.8), 0.1); // teapot material
     auto mat = make_shared<lambertian>(color(0.8, 0.8, 0.0)); // world material
+    auto em = make_shared<emmissive>(color(0.5));
     auto tex_mat = make_shared<metal>("models/textures/checkered.ppm","models/textures/dirt.ppm",0.1);
     mesh Model = mesh("models/solid_teapot.obj", tex_mat, world);
     //world.add(make_shared<sphere>(point3(0,2,0), 2.0, tex_mat));
@@ -144,7 +145,7 @@ int main()
     cam.vup = vec3(0, 1, 0);
     cam.ambient = color(0.05);
 
-    //cam.add_light(std::make_shared<light>(point3(3,5,0), color(0.7,0.7,0.4), 50));
+    //.add_light(std::make_shared<light>(point3(3,5,0), color(0.7,0.7,0.4), 50));
     cam.add_light(std::make_shared<spot_light>(point3(0,10,0), color(0.7,0.7,0.4), 150, 0.22,0.3,vec3(0,-1,0)));
     //cam.add_light(light(point3(3,5,0), color(1)));
 

@@ -10,6 +10,7 @@ class material
 {
 public:
   texture normal_texture;
+  double min_brightness = 0.; //this is for glowy textures
 
   virtual ~material() = default;
 
@@ -65,6 +66,32 @@ public:
 
     scattered = ray(rec.p, scatter_direction);
     attenuation = mat_texture.get_color_at_coordinate(rec.texture_sample_point.e[0], rec.texture_sample_point.e[1]) * 0.8;
+    return true;
+  }
+
+};
+
+class emmissive : public material
+{
+public:
+  emmissive(const color &albedo)
+  {
+    mat_texture = texture(albedo);
+    normal_texture = texture(normal_default);
+    min_brightness = 1.;
+  }
+
+  bool scatter(const ray &r_in, const hit_record &rec, color &attenuation, ray &scattered)
+      const override
+  {
+    auto scatter_direction = rec.normal + random_unit_vector();
+
+    // Catch degenerate scatter direction incase random unit is the exact oposite
+    if (scatter_direction.near_zero())
+      scatter_direction = rec.normal;
+
+    scattered = ray(rec.p, scatter_direction);
+    attenuation = mat_texture.get_color_at_coordinate(rec.texture_sample_point.e[0], rec.texture_sample_point.e[1]);
     return true;
   }
 };

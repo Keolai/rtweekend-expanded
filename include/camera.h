@@ -169,7 +169,8 @@ private:
 
             if (rec.mat->scatter(r, rec, attenuation, scattered))
             {
-                indirect = attenuation * ray_color(scattered, depth - 1, world) * ambient;
+                indirect = attenuation * mix(ray_color(scattered, depth - 1, world),color(1.), rec.mat->min_brightness) * ambient;
+                direct = mix(direct,rec.mat->get_albedo(rec),rec.mat->min_brightness); //turn off shadows on glowy stuff
                 // return clamp(direct + indirect,0,1);
             }
             return direct + indirect;
