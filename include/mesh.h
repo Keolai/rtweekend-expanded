@@ -24,8 +24,8 @@ public:
     mesh() {}
 
     mesh(const std::string &file_path,
-         std::shared_ptr<material> mat)
-        : file_path(file_path), mat(mat) {}
+         std::shared_ptr<material> mat, hittable_list &world)
+        : file_path(file_path), mat(mat) {load_model(world);}
 
     bool load_model(hittable_list &world)
     {
@@ -126,14 +126,13 @@ public:
                         vec3 n0 = normals[fv0.vn];
                         vec3 n1 = normals[fv1.vn];
                         vec3 n2 = normals[fv2.vn];
-
-                        world.add(
-                            std::make_shared<tri>(
-                                std::array<point3, 3>{
+                        auto triangle = std::make_shared<tri>( std::array<point3, 3>{
                                     v0, v1, v2},
                                 std::array<vec3, 3>{
                                     n0, n1, n2},
-                                mat));
+                                mat);
+                        triangles.push_back(triangle);
+                        world.add(triangle);
                     }
                     else if (has_normals && has_uvs)
                     {
@@ -144,33 +143,41 @@ public:
                         vec3 uv0 = texcoords[fv0.vt];
                         vec3 uv1 = texcoords[fv1.vt];
                         vec3 uv2 = texcoords[fv2.vt];
-
-                        world.add(
-                            std::make_shared<tri>(
-                                std::array<point3, 3>{
+                        auto triangle = std::make_shared<tri>(std::array<point3, 3>{
                                     v0, v1, v2},
                                 std::array<vec3, 3>{
                                     n0, n1, n2},
                                 std::array<vec3, 3>{
                                     uv0, uv1, uv2},
-                                mat));
+                                mat);
+                        triangles.push_back(triangle);
+                        world.add(triangle);
                     }
                     else
                     {
-                        world.add(
-                            std::make_shared<tri>(
-                                std::array<point3, 3>{
-                                    v0, v1, v2},
-                                mat));
+                       auto triangle = std::make_shared<tri>(
+                            std::array<point3, 3>{v0, v1, v2},
+                            mat
+                        );
+                        triangles.push_back(triangle);
+                        world.add(triangle);
                     }
                 }
             }
         }
-
+        loaded = true;
         return true;
     }
 
+    void position(vec3 &pos){
+        for (int i = 0; i < triangles.size(); i++){
+            triangles[i]->position(pos);
+        }
+    }
+
 private:
+    std::vector<std::shared_ptr<tri>> triangles;
+
     face_vertex parse_face_index(
         const std::string &token,
         size_t vertex_count,
@@ -239,6 +246,8 @@ private:
     std::shared_ptr<material> mat;
 
     std::vector<vec3> vertices;
+
+    bool loaded = false;
 };
 
 #endif

@@ -169,4 +169,10 @@ inline vec3 refract(const vec3& uv, const vec3& n, double etai_over_etat) {
     return r_out_perp + r_out_parallel;
 }
 
+inline void copy(const vec3& orig, vec3& dest){
+    for (int i = 0; i < 3; i++){
+        dest.e[i] = orig.e[i];
+    }
+}
+
 #endif

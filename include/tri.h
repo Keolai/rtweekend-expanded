@@ -9,6 +9,7 @@ public:
     tri(const std::array<point3, 3> &vertices, shared_ptr<material> mat)
         : vertices(vertices), mat(mat)
     {
+        copy_vertices(vertices, original_vertices);
         normals_stored = false;
         textcoords_stored = false;
     }
@@ -16,6 +17,7 @@ public:
     tri(const std::array<point3, 3> &vertices, const std::array<point3, 3> &normals, shared_ptr<material> mat)
         : vertices(vertices), mat(mat), normals(normals)
     {
+        copy_vertices(vertices, original_vertices);
         normals_stored = true;
         textcoords_stored = false;
         tangent_space();
@@ -25,6 +27,7 @@ public:
         const std::array<point3, 3> &UV, shared_ptr<material> mat)
         : vertices(vertices), mat(mat), normals(normals), UV(UV)
     {
+        copy_vertices(vertices, original_vertices);
         normals_stored = true;
         textcoords_stored = true;
         tangent_space();
@@ -116,10 +119,23 @@ public:
                v * arr[2];
     }
 
+    void copy_vertices(const std::array<point3, 3> &orig, std::array<point3, 3> &dest){
+        for (int i = 0; i < 3; i++){
+            copy(orig[i],dest[i]);
+        }
+    }
+
+    void position(vec3 &pos){
+        for (int i = 0; i < 3; i++){
+             copy(original_vertices[i] + pos, vertices[i]);
+        }
+    }
+
 private:
     bool normals_stored;
     bool textcoords_stored;
     std::array<point3, 3> vertices;
+    std::array<point3, 3> original_vertices; //original positions of vertices in model
     std::array<point3, 3> normals;
     std::array<point3, 3> UV;
     vec3 const_tangent;
