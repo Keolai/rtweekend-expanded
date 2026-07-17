@@ -8,9 +8,9 @@ It implements all original functionality plus some extra functionality, includin
 * **Triangle support and loading from OBJ:** tri.h, mesh.h
 * **A window and primitive GUI system using SDL3:** window.h, gui/\*
 * **Shadows and support for multiple lights:** light.h, camera.h
-* **Texture sampling with linear interpolation** texture.h
-* **Smooth normals and normal map support** tri.h, sphere.h, material.h
-* **Area and point lights** light.h
+* **Texture sampling with linear interpolation:** texture.h
+* **Smooth normals and normal map support:** tri.h, sphere.h, material.h
+* **Area and point lights:** light.h
 
 <img src="example1.png" alt="drawing" width="500"/>
 
