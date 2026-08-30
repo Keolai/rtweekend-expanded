@@ -67,7 +67,7 @@ void gui_setup(window &win, int height)
     win.create_text(72, height - 30, ".ppm");
 }
 
-void render(camera &cam, hittable &world, window &win, int samples, int shadow_samples)
+void render(camera &cam, hittable &world, window &win, int samples, int shadow_samples, int image_res)
 {
     float input_floats[6];
 
@@ -93,6 +93,7 @@ void render(camera &cam, hittable &world, window &win, int samples, int shadow_s
     cam.shadow_samples = shadow_samples;
     cam.lookfrom = vec3(input_floats[0], input_floats[1], input_floats[2]);
     cam.lookat = vec3(input_floats[3], input_floats[4], input_floats[5]);
+    cam.image_resolution = image_res;
     cam.render(world, color_buffer, win);
 }
 
@@ -144,11 +145,11 @@ int main()
     cam.lookat = point3(0, 0, -2);
     cam.vup = vec3(0, 1, 0);
     cam.ambient = color(0.05);
+    cam.image_resolution = 4;
 
     //.add_light(std::make_shared<light>(point3(3,5,0), color(0.7,0.7,0.4), 50));
     cam.add_light(std::make_shared<spot_light>(point3(0,10,0), color(0.7,0.7,0.4), 150, 0.22,0.3,vec3(0,-1,0)));
     //cam.add_light(light(point3(3,5,0), color(1)));
-
     // window stuff
     window win = window(cam.get_height(), cam.image_width);
     gui_setup(win, cam.get_height());
@@ -156,9 +157,9 @@ int main()
 
     // buttons
     win.create_button(5, 50, 50, 20, "Render", [&]()
-                      { render(cam, *world_bvh, win, 1,3); });
+                      { render(cam, *world_bvh, win, 1,3,4); });
     win.create_button(5, 75, 75, 20, "HD Render", [&]()
-                      { render(cam, *world_bvh, win, 25,8); });
+                      { render(cam, *world_bvh, win, 25,8,1); });
     win.create_button(5, cam.get_height() - 25, 50, 20, "Save!", [&]()
                       { write_to_file(cam.image_width, cam.get_height()); });
 

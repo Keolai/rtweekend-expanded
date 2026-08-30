@@ -2,6 +2,7 @@
 #define tri_H
 
 #include "hittable.h"
+#include <array>
 
 class tri : public hittable
 {

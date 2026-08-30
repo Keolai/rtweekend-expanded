@@ -27,6 +27,7 @@ public:
     point3 lookfrom = point3(0, 0, 0); // Point camera is looking from
     point3 lookat = point3(0, 0, -1);  // Point camera is looking at
     vec3 vup = vec3(0, 1, 0);          // Camera-relative "up" direction
+    int image_resolution = 2;
 
     double defocus_angle = 0; // Variation angle of rays through each pixel
     double focus_dist = 10;   // Distance from camera lookfrom point to plane of perfect focus
@@ -36,10 +37,10 @@ public:
     {
         initialize();
 
-        for (int j = 0; j < image_height; j++)
+        for (int j = 0; j < image_height; j+=image_resolution)
         {
             std::clog << "\rScanlines remaining: " << (image_height - j) << ' ' << std::flush;
-            for (int i = 0; i < image_width; i++)
+            for (int i = 0; i < image_width; i+=image_resolution)
             {
                 color pixel_color(0, 0, 0);
                 for (int sample = 0; sample < samples_per_pixel; sample++)
@@ -47,7 +48,14 @@ public:
                     ray r = get_ray(i, j);
                     pixel_color += ray_color(r, max_depth, world);
                 }
-                color_buffer[(j * image_width) + i] = (pixel_samples_scale * pixel_color);
+                for (int k = 0; k < image_resolution; k++){
+                    for (int g = 0; g < image_resolution; g++){
+                        if((j+k) < image_height && (i + g) < image_width){
+                        color_buffer[((j+k) * image_width) + (i+g)] = (pixel_samples_scale * pixel_color);
+                        }
+                    }
+                }
+                //color_buffer[(j * image_width) + i] = (pixel_samples_scale * pixel_color);
             }
             if (j % 10 == 0)
             {
