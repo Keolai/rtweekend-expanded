@@ -82,12 +82,12 @@ public:
                 rec.set_geometry_normal(r, normal);
             }
             tangent_on_hit(rec.normal, rec);
+            //std::cout << "tri normal: " << rec.normal << '\n';
             rec.t = t; // point where it hit
             rec.mat = mat;
             rec.texture_sample_point = interpolated_texture(u, v, UV);
 
             find_world_tangent(r, rec, mat->normal_texture);
-
             return true;
         }
         else

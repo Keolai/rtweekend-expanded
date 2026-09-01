@@ -181,6 +181,7 @@ private:
                 direct = mix(direct,rec.mat->get_albedo(rec),rec.mat->min_brightness); //turn off shadows on glowy stuff
                 // return clamp(direct + indirect,0,1);
             }
+            //check normals return rec.normal;
             return direct + indirect;
         }
 

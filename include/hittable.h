@@ -48,9 +48,15 @@ public:
 
   virtual bool hit(const ray &r, interval ray_t, hit_record &rec) const = 0;
 
-   void find_world_tangent(const ray &r, hit_record &rec, texture &tex) const
+  void find_world_tangent(const ray &r, hit_record &rec, texture &tex) const
   {
+    // printf("%d\n",tex.size());
     color texel = tex.get_color_at_coordinate(rec.texture_sample_point.x(), rec.texture_sample_point.y());
+    //     std::cout << "normal color: " << texel << '\n';
+    //     std::cout << "plane normal: " << rec.normal << '\n';
+    //     std::cout << "rec.normal:    " << rec.normal << '\n';
+    // std::cout << "rec.tangent:   " << rec.tangent << '\n';
+    // std::cout << "rec.bitangent: " << rec.bitangent << '\n';
     vec3 tangent_normal(
         2.0 * texel.x() - 1.0,
         2.0 * texel.y() - 1.0,
@@ -64,10 +70,8 @@ public:
             tangent_normal.x() * rec.tangent +
             tangent_normal.y() * rec.bitangent +
             tangent_normal.z() * rec.normal);
-
     rec.set_face_normal(r, world_normal);
   }
-
 };
 
 #endif

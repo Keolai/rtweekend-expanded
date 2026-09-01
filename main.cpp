@@ -4,6 +4,7 @@
 #include "include/hittable_list.h"
 #include "include/material.h"
 #include "include/sphere.h"
+#include "include/plane.h"
 #include "include/tri.h"
 #include "include/mesh.h"
 #include "include/bvh.h"
@@ -126,7 +127,9 @@ int main()
     auto tex_mat = make_shared<metal>("models/textures/checkered.ppm","models/textures/dirt.ppm",0.1);
     mesh Model = mesh("models/solid_teapot.obj", tex_mat, world);
     //world.add(make_shared<sphere>(point3(0,2,0), 2.0, tex_mat));
-    world.add(make_shared<sphere>(point3(0.0, -100.5, -1.0), 100.0, mat));
+    //world.add(make_shared<sphere>(point3(0.0, -100.5, -1.0), 100.0, mat));
+    
+    world.add(make_shared<plane>(point3(0.0, -0.5, -1.0), 10, mat));
     // //* END OF WORLD DEFINITION *//
 
     auto world_bvh = make_shared<bvh_node>(

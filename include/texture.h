@@ -46,6 +46,10 @@ public:
         return mix(mix(color_x_one,color_x_two,d_x),mix(color_y_one,color_y_two,d_x),d_y);
     }
 
+    int size(){
+        return color_buffer.size();
+    }
+
 private:
     std::string file_path;
     std::vector<color> color_buffer;
