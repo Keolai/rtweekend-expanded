@@ -7,10 +7,21 @@
 class tri : public hittable
 {
 public:
+    int model_id = -1;
+
     tri(const std::array<point3, 3> &vertices)
         : vertices(vertices)
     {
         copy_vertices(vertices, original_vertices);
+    }
+
+    tri(point3 &v1, point3 &v2, point3 &v3){
+        vertices[0] = v1;
+        vertices[1] = v2;
+        vertices[2] = v3;
+        original_vertices[0] = v1;
+        original_vertices[1] = v2;
+        original_vertices[2] = v3;
     }
 
     bool hit(const ray &r, interval ray_t, hit_record &rec) const override

@@ -36,6 +36,10 @@ public:
 
   state current_state = state();
   state next_state = state();
+
+  double mass = 0;
+
+  virtual void update_state() const; 
   bool rigid = true; //dont move!
 
 

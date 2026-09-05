@@ -11,4 +11,10 @@ class state {
     vec3 velocity = vec3(0.);
 };
 
+inline void copy(state orig, state dest){
+  dest.position = orig.position;
+  dest.acceleration = orig.acceleration;
+  dest.velocity = orig.velocity;
+}
+
 #endif
