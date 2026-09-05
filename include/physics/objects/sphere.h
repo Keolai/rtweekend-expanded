@@ -6,8 +6,8 @@
 class sphere : public hittable
 {
 public:
-  sphere(const point3 &center, double radius, shared_ptr<material> mat)
-      : center(center), radius(std::fmax(0, radius)), mat(mat) {}
+  sphere(const point3 &center, double radius)
+      : center(center), radius(std::fmax(0, radius)) {}
 
   bool hit(const ray &r, interval ray_t, hit_record &rec) const override
   {
@@ -60,6 +60,10 @@ public:
     return aabb(
         center - rvec,
         center + rvec);
+  }
+
+  void position(vec3 &newPos){
+    center = newPos;
   }
 
 private:

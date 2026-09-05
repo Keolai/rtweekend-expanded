@@ -10,6 +10,8 @@
 #include "include/bvh.h"
 #include "include/window.h"
 
+#include "include/physics/sim.h"
+
 #include <iostream>
 #include <fstream>
 

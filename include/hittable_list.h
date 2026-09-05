@@ -67,6 +67,10 @@ public:
 
         return output_box;
     }
+
+    int size(){
+        return objects.size();
+    }
 };
 
 #endif

@@ -2,6 +2,8 @@
 #define VEC3_H
 
 /* Original code by Peter Shirley, modified by me */
+#include <cmath>
+#include "util.h"
 
 class vec3 {
   public:

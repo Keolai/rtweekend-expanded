@@ -1,9 +1,8 @@
 #ifndef HITTABLE_H
 #define HITTABLE_H
 
-class material;
-
 #include "aabb.h"
+#include "utilities/state.h"
 
 class hit_record
 {
@@ -11,8 +10,6 @@ public:
   point3 p;
   vec3 normal;
 
-  vec3 tangent;
-  vec3 bitangent;
   vec3 bay_coord;
 
   double t;
@@ -36,6 +33,12 @@ public:
   virtual aabb bounding_box() const = 0; //need?
 
   virtual bool hit(const ray &r, interval ray_t, hit_record &rec) const = 0;
+
+  state current_state = state();
+  state next_state = state();
+  bool rigid = true; //dont move!
+
+
 
 };
 
