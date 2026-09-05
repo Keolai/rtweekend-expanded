@@ -1,5 +1,5 @@
-#ifndef HITTABLE_LIST_H
-#define HITTABLE_LIST_H
+#ifndef PHY_HITTABLE_LIST_H
+#define PHY_HITTABLE_LIST_H
 
 #include "hittable.h"
 
@@ -8,24 +8,24 @@
 using std::make_shared;
 using std::shared_ptr;
 
-class hittable_list : public hittable
+class phy_hittable_list : public phy_hittable
 {
 public:
-    std::vector<shared_ptr<hittable>> objects;
+    std::vector<shared_ptr<phy_hittable>> objects;
 
-    hittable_list() {}
-    hittable_list(shared_ptr<hittable> object) { add(object); }
+    phy_hittable_list() {}
+    phy_hittable_list(shared_ptr<phy_hittable> object) { add(object); }
 
     void clear() { objects.clear(); }
 
-    void add(shared_ptr<hittable> object)
+    void add(shared_ptr<phy_hittable> object)
     {
         objects.push_back(object);
     }
 
-    bool hit(const ray &r, interval ray_t, hit_record &rec) const override
+    bool hit(const ray &r, interval ray_t, phy_hit_record &rec) const override
     {
-        hit_record temp_rec;
+        phy_hit_record temp_rec;
         bool hit_anything = false;
         auto closest_so_far = ray_t.max;
 
@@ -42,17 +42,17 @@ public:
         return hit_anything;
     }
 
-    aabb bounding_box() const override //dont really need yet?
+    phy_aabb bounding_box() const override // dont really need yet?
     {
         if (objects.empty())
-            return aabb();
+            return phy_aabb();
 
-        aabb output_box;
+        phy_aabb output_box;
         bool first_box = true;
 
         for (const auto &object : objects)
         {
-            aabb obj_box = object->bounding_box();
+            phy_aabb obj_box = object->bounding_box();
 
             if (first_box)
             {
@@ -66,6 +66,13 @@ public:
         }
 
         return output_box;
+    }
+
+    int size() { return objects.size(); }
+
+    void update_state() override
+    {
+        // ...
     }
 };
 

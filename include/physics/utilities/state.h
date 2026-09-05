@@ -1,8 +1,6 @@
 #ifndef STATE_H
 #define STATE_H
 
-#include "vec3.h"
-
 class state {
   public:
     state() {}

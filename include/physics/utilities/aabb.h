@@ -1,26 +1,24 @@
-#ifndef AABB_H
-#define AABB_H
+#ifndef PHY_AABB_H
+#define PHY_AABB_H
 
-#include "interval.h"
-#include "ray.h"
 #include <cmath>
 
-class aabb
+class phy_aabb
 {
 public:
     interval x, y, z;
 
     // Empty box
-    aabb() {}
+    phy_aabb() {}
 
     // Construct from intervals
-    aabb(const interval &x,
+    phy_aabb(const interval &x,
          const interval &y,
          const interval &z)
         : x(x), y(y), z(z) {}
 
     // Construct from two corner points
-    aabb(const point3 &a, const point3 &b)
+    phy_aabb(const point3 &a, const point3 &b)
     {
         x = interval(
             std::fmin(a.x(), b.x()),
@@ -76,8 +74,8 @@ public:
     }
 };
 
-inline aabb surrounding_box(const aabb &box0,
-                            const aabb &box1)
+inline phy_aabb surrounding_box(const phy_aabb &box0,
+                            const phy_aabb &box1)
 {
     interval x(
         std::fmin(box0.x.min, box1.x.min),
@@ -91,7 +89,7 @@ inline aabb surrounding_box(const aabb &box0,
         std::fmin(box0.z.min, box1.z.min),
         std::fmax(box0.z.max, box1.z.max));
 
-    return aabb(x, y, z);
+    return phy_aabb(x, y, z);
 }
 
 #endif

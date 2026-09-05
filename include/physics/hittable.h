@@ -1,49 +1,45 @@
-#ifndef HITTABLE_H
-#define HITTABLE_H
+#ifndef PHY_HITTABLE_H
+#define PHY_HITTABLE_H
 
-#include "aabb.h"
+#include "utilities/aabb.h"
 #include "utilities/state.h"
 
-class hit_record
+class phy_hit_record
 {
 public:
-  point3 p;
-  vec3 normal;
+    point3 p;
+    vec3 normal;
 
-  vec3 bay_coord;
+    vec3 bay_coord;
 
-  double t;
-  bool front_face;
+    double t;
+    bool front_face;
 
-  void set_normal(const ray &r, const vec3 &outward_normal)
-  {
-    // Sets the hit record normal vector.
-    // NOTE: the parameter `outward_normal` is assumed to have unit length.
+    void set_normal(const ray &r, const vec3 &outward_normal)
+    {
+        // Sets the hit record normal vector.
+        // NOTE: the parameter `outward_normal` is assumed to have unit length.
 
-    front_face = dot(r.direction(), outward_normal) < 0;
-    normal = front_face ? outward_normal : -outward_normal;
-  }
-
+        front_face = dot(r.direction(), outward_normal) < 0;
+        normal = front_face ? outward_normal : -outward_normal;
+    }
 };
 
-class hittable
+class phy_hittable
 {
 public:
-  virtual ~hittable() = default;
-  virtual aabb bounding_box() const = 0; //need?
+    virtual ~phy_hittable() = default;
+    virtual phy_aabb bounding_box() const = 0; // need?
 
-  virtual bool hit(const ray &r, interval ray_t, hit_record &rec) const = 0;
+    virtual bool hit(const ray &r, interval ray_t, phy_hit_record &rec) const = 0;
 
-  state current_state = state();
-  state next_state = state();
+    state current_state = state();
+    state next_state = state();
 
-  double mass = 0;
+    double mass = 0;
 
-  virtual void update_state() const; 
-  bool rigid = true; //dont move!
-
-
-
+    virtual void update_state() = 0;
+    bool rigid = true; // dont move!
 };
 
 #endif

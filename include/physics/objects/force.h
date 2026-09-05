@@ -1,9 +1,7 @@
 #ifndef FORCE_H
 #define FORCE_H
 
-#include "../utilities/vec3.h"
-
-class world_force
+class force
 {
 public:
     int strength = 0;
@@ -13,7 +11,7 @@ public:
         return ((double)strength * mass) * direction ;
     }
 };
-class local_force : public world_force
+class local_force : public force
 {
     public:
     vec3 position = vec3(0);

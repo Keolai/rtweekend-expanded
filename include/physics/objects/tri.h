@@ -1,21 +1,22 @@
-#ifndef tri_H
-#define tri_H
+#ifndef PHYSICS_phy_tri_H
+#define PHYSICS_phy_tri_H
 
 #include "../hittable.h"
 #include <array>
 
-class tri : public hittable
+class phy_tri : public phy_hittable
 {
 public:
     int model_id = -1;
 
-    tri(const std::array<point3, 3> &vertices)
+    phy_tri(const std::array<point3, 3> &vertices)
         : vertices(vertices)
     {
         copy_vertices(vertices, original_vertices);
     }
 
-    tri(point3 &v1, point3 &v2, point3 &v3){
+    phy_tri(point3 &v1, point3 &v2, point3 &v3)
+    {
         vertices[0] = v1;
         vertices[1] = v2;
         vertices[2] = v3;
@@ -24,7 +25,7 @@ public:
         original_vertices[2] = v3;
     }
 
-    bool hit(const ray &r, interval ray_t, hit_record &rec) const override
+    bool hit(const ray &r, interval ray_t, phy_hit_record &rec) const override
     {
         auto epsilon = 1e-8;
 
@@ -36,7 +37,7 @@ public:
         float det = dot(edge1, ray_cross_e2);
 
         if (std::fabs(det) < epsilon)
-        { // ray is parallel
+        { // phy_ray  is parallel
             return false;
         }
 
@@ -45,7 +46,7 @@ public:
         float u = inv_det * dot(s, ray_cross_e2);
         if (u < 0.0 || u > 1.0)
         {
-            return false; // ray passes outside of edge2 bounds
+            return false; // phy_ray  passes outside of edge2 bounds
         }
 
         vec3 s_cross_e1 = cross(s, edge1);
@@ -60,9 +61,9 @@ public:
 
         if (ray_t.contains(t)) // Ray intersection !!
         {
-            rec.p = r.at(t); // ray at point
-                rec.set_normal(r, normal);
-            //std::cout << "tri normal: " << rec.normal << '\n';
+            rec.p = r.at(t); // phy_ray  at point
+            rec.set_normal(r, normal);
+            // std::cout << "phy_tri normal: " << rec.normal << '\n';
             rec.t = t; // point where it hit
             rec.bay_coord = bay_coordinate(u, v);
             return true;
@@ -70,10 +71,10 @@ public:
         else
         {
             return false;
-        } // This means that there is a line intersection but not a ray intersection.
+        } // This means that there is a line intersection but not a phy_ray  intersection.
     }
 
-    aabb bounding_box() const override
+    phy_aabb bounding_box() const override
     {
         double min_x = std::min({vertices[0].x(), vertices[1].x(), vertices[2].x()});
         double min_y = std::min({vertices[0].y(), vertices[1].y(), vertices[2].y()});
@@ -86,7 +87,7 @@ public:
         point3 min_point(min_x, min_y, min_z);
         point3 max_point(max_x, max_y, max_z);
 
-        return aabb(min_point, max_point);
+        return phy_aabb(min_point, max_point);
     }
 
     vec3 bay_coordinate(double u, double v) const
@@ -94,25 +95,33 @@ public:
         double w = 1.0 - u - v;
         return w +
                u +
-               v ;
+               v;
     }
 
-    void copy_vertices(const std::array<point3, 3> &orig, std::array<point3, 3> &dest){
-        for (int i = 0; i < 3; i++){
-            copy(orig[i],dest[i]);
+    void copy_vertices(const std::array<point3, 3> &orig, std::array<point3, 3> &dest)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            copy(orig[i], dest[i]);
         }
     }
 
-    void position(vec3 &pos){
-        for (int i = 0; i < 3; i++){
-             copy(original_vertices[i] + pos, vertices[i]);
+    void position(vec3 &pos)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            copy(original_vertices[i] + pos, vertices[i]);
         }
+    }
+
+    void update_state() override
+    {
+        copy(next_state,current_state); //copy the next predicted state to the new state;
     }
 
 private:
     std::array<point3, 3> vertices;
-    std::array<point3, 3> original_vertices; //original positions of vertices in model
-
+    std::array<point3, 3> original_vertices; // original positions of vertices in model
 };
 
 #endif

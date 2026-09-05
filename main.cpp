@@ -10,7 +10,7 @@
 #include "include/bvh.h"
 #include "include/window.h"
 
-#include "include/physics/sim.h"
+#include "include/physics_layer.h"
 
 #include <iostream>
 #include <fstream>
@@ -130,6 +130,10 @@ int main()
     mesh Model = mesh("models/solid_teapot.obj", tex_mat, world);
     //world.add(make_shared<sphere>(point3(0,2,0), 2.0, tex_mat));
     //world.add(make_shared<sphere>(point3(0.0, -100.5, -1.0), 100.0, mat));
+
+    physics_layer sim = physics_layer();
+
+    sim.add_sphere_to_world(vec3(0.),10);
     
     world.add(make_shared<plane>(point3(0.0, -0.5, -1.0), 10, mat));
     // //* END OF WORLD DEFINITION *//
