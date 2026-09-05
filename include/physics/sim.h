@@ -16,13 +16,13 @@ public:
 
     int step(double dt) // dt should be ms;
     {
-
+        printf("cur step: %d\n",cur_step);
         for (int i = 0; i < world.size(); i++)
         {
             // iterate through list
             auto cur_object = world.objects[i];
 
-            if (!cur_object->rigid) // object can move
+            if (cur_object && !cur_object->rigid) // object can move
             {
                 cur_object->update_state(); // copy new state to old state
                 state new_state = state();
@@ -33,7 +33,9 @@ public:
                 {
                     // apply forces/move
                     std::shared_ptr<force> cur_force = forces[j];
-                    net_force += cur_force->get_force(new_state.position, cur_object->mass);
+                    if (cur_force){
+                         net_force += cur_force->get_force(new_state.position, cur_object->mass);
+                    }
                 }
 
                 // Newton's second law
@@ -47,7 +49,7 @@ public:
                 // react to collision
             }
         }
-
+        cur_step++;
         return 0;
     }
 

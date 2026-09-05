@@ -134,6 +134,7 @@ int main()
     physics_layer sim = physics_layer();
 
     sim.add_sphere_to_world(vec3(0.),10);
+    sim.add_force(vec3(0,-1,0),9.8);
     
     world.add(make_shared<plane>(point3(0.0, -0.5, -1.0), 10, mat));
     // //* END OF WORLD DEFINITION *//
@@ -177,6 +178,7 @@ int main()
     cam.render(*world_bvh, color_buffer, win);
     while (!win.poll_for_event())
     {
+        sim.step(10);
         win.update();
     }
 }

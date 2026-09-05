@@ -4,6 +4,7 @@
 class force
 {
 public:
+    force(){}
     int strength = 0;
     vec3 direction = vec3(0);
 
