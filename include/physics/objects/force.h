@@ -5,7 +5,7 @@ class force
 {
 public:
     force(){}
-    int strength = 0;
+    double strength = 0;
     vec3 direction = vec3(0);
 
     virtual vec3 get_force(vec3 object_position, double mass) const {

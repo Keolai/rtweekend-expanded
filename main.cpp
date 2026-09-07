@@ -15,6 +15,16 @@
 #include <iostream>
 #include <fstream>
 
+#include <atomic>
+#include <thread>
+#include <chrono>
+#include <mutex>
+
+#define SIM_RATE_MS 10
+
+std::atomic<bool> running{true};
+std::mutex state_mutex;
+
 std::vector<color> color_buffer;
 std::string labels[2] = {"position:", "look at:"};
 std::string axis[3] = {"x", "y", "z"};
@@ -119,6 +129,18 @@ void populate_gui_start_state(camera &cam)
     }
 }
 
+void physics_thread_func(physics_layer &sim, std::chrono::milliseconds interval) {
+    auto next_tick = std::chrono::steady_clock::now();
+    while (running) {
+        next_tick += interval;
+        {
+            std::lock_guard<std::mutex> lock(state_mutex);
+            sim.step(interval.count());
+        }
+        std::this_thread::sleep_until(next_tick);
+    }
+}
+
 int main()
 {
     //* DEFINE WORLD HERE *//
@@ -174,11 +196,14 @@ int main()
                       { write_to_file(cam.image_width, cam.get_height()); });
 
     populate_gui_start_state(cam);
-   // printf("meow meow moew\n");
+
+     std::thread physics_thread(physics_thread_func, std::ref(sim),
+                                std::chrono::milliseconds(SIM_RATE_MS));
     cam.render(*world_bvh, color_buffer, win);
     while (!win.poll_for_event())
     {
-        sim.step(10);
         win.update();
     }
+
+    physics_thread.join();
 }

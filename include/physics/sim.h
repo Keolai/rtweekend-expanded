@@ -35,6 +35,7 @@ public:
                     std::shared_ptr<force> cur_force = forces[j];
                     if (cur_force){
                          net_force += cur_force->get_force(new_state.position, cur_object->mass);
+                         printf("force: %f\n",cur_force->strength);
                     }
                 }
 
@@ -44,7 +45,8 @@ public:
                 new_state.velocity += new_state.acceleration * (dt/1000);
                 // Integrate position
                 new_state.position += new_state.velocity * (dt/1000);
-                printf("NEW POSITION: %f\n",new_state.position.y());
+                printf("NEW POSITION: %f, %f, %f\n",new_state.position.x(),new_state.position.y(),new_state.position.z());
+                copy(new_state,cur_object->next_state);
                 // check for collision
                 // react to collision
             }
