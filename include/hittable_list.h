@@ -21,8 +21,8 @@ public:
 
     void add(shared_ptr<hittable> object)
     {
-        objects.push_back(object);
         object->id = cur_id;
+        objects.push_back(object);
         cur_id++;
     }
 
@@ -30,6 +30,7 @@ public:
     {
         objects.push_back(object);
         object->id = id;
+        cur_id++; //just incase
     }
 
     bool hit(const ray &r, interval ray_t, hit_record &rec) const override
@@ -79,6 +80,10 @@ public:
 
     int size(){
         return objects.size();
+    }
+
+    void position(vec3 &pos){
+        return;
     }
 };
 

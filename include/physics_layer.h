@@ -2,10 +2,16 @@
 #define PHYSICS_LAYER_H
 
 #include "physics/sim.h"
+#include "hittable_list.h"
 
 #include <iostream>
 #include <map>           // Required for std::map
 #include <unordered_map> // Required for std::unordered_map
+
+#include <atomic>
+#include <thread>
+#include <chrono>
+#include <mutex>
 
 class physics_layer
 {
@@ -14,12 +20,13 @@ public:
 
     void step(double delta)
     {
-        simulation.step(delta); // delta should be in ms
+        std::lock_guard<std::mutex> lock(state_mutex_);
+        simulation.step(delta);
     }
 
     int add_sphere_to_world(const vec3 &pos, double radius)
     {
-          auto new_sphere = std::make_shared<phy_sphere>(pos, radius);
+        auto new_sphere = std::make_shared<phy_sphere>(pos, radius);
         new_sphere->rigid = false;
 
         simulation.world.add(new_sphere);
@@ -38,12 +45,33 @@ public:
 
     void connect_objects(int renderId, int physicsId){
         idMap.insert({renderId,physicsId});
+        simulation.add_objects_to_map();
+    }
+
+    void set_render_objects(hittable_list &world){
+        render_world = world;
+    }
+
+    void update_render(){
+        std::lock_guard<std::mutex> lock(state_mutex_);
+        for(int i = 0; i < render_world.objects.size(); i++){
+            auto cur_render_object = render_world.objects[i];
+            int cur_render_id = cur_render_object->id;
+            int cur_physics_id = idMap[cur_render_id];
+             //printf("render id %d -> physics id %d\n", cur_render_id, cur_physics_id);
+            vec3 new_position = simulation.object_position(cur_physics_id);
+             //printf("NEW POSITION: %f, %f, %f\n",new_position.x(),new_position.y(),new_position.z());
+            cur_render_object->position(new_position);
+        }
     }
 
 private:
     sim simulation = sim();
+    hittable_list render_world = hittable_list();
+
 
     std::map<int,int> idMap; //should be renderId, then physicsId
+    std::mutex state_mutex_;   // now owned here, not a free global
 };
 
 #endif

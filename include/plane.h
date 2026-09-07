@@ -54,6 +54,10 @@ public:
         return aabb(min_point, max_point);
     }
 
+    void position(vec3 &pos){
+        return;
+    }
+
 private:
     point3 center;
     double length;

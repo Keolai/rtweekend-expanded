@@ -133,10 +133,7 @@ void physics_thread_func(physics_layer &sim, std::chrono::milliseconds interval)
     auto next_tick = std::chrono::steady_clock::now();
     while (running) {
         next_tick += interval;
-        {
-            std::lock_guard<std::mutex> lock(state_mutex);
-            //sim.step(interval.count());
-        }
+        sim.step(interval.count());   // locking now happens inside step()
         std::this_thread::sleep_until(next_tick);
     }
 }
@@ -149,16 +146,20 @@ int main()
     auto mat = make_shared<lambertian>(color(0.8, 0.8, 0.0)); // world material
     auto em = make_shared<emmissive>(color(0.5));
     auto tex_mat = make_shared<metal>("models/textures/checkered.ppm","models/textures/dirt.ppm",0.1);
-    mesh Model = mesh("models/solid_teapot.obj", tex_mat, world);
-    //world.add(make_shared<sphere>(point3(0,2,0), 2.0, tex_mat));
-    //world.add(make_shared<sphere>(point3(0.0, -100.5, -1.0), 100.0, mat));
 
-    physics_layer sim = physics_layer();
+    physics_layer sim;
 
-    int sphere_physics_id = sim.add_sphere_to_world(vec3(0.),10);
-    sim.add_force(vec3(0,-1,0),9.8);
+    int sphere_physics_id = sim.add_sphere_to_world(vec3(0,5,0),1.0);
+    auto mySphere = std::make_shared<sphere>(point3(0,5,0), 1.0, tex_mat);
+    world.add(mySphere);
+
+
+    sim.connect_objects(mySphere->id,sphere_physics_id);
+    sim.add_force(vec3(0,-1,0),1.8);
+
+    sim.set_render_objects(world);
     
-    world.add(make_shared<plane>(point3(0.0, -0.5, -1.0), 10, mat));
+    // world.add(make_shared<plane>(point3(0.0, -0.5, -1.0), 10, mat));
     // //* END OF WORLD DEFINITION *//
 
     auto world_bvh = make_shared<bvh_node>(
@@ -179,9 +180,7 @@ int main()
     cam.ambient = color(0.05);
     cam.image_resolution = 4;
 
-    //.add_light(std::make_shared<light>(point3(3,5,0), color(0.7,0.7,0.4), 50));
     cam.add_light(std::make_shared<spot_light>(point3(0,10,0), color(0.7,0.7,0.4), 150, 0.22,0.3,vec3(0,-1,0)));
-    //cam.add_light(light(point3(3,5,0), color(1)));
     // window stuff
     window win = window(cam.get_height(), cam.image_width);
     gui_setup(win, cam.get_height());
@@ -189,9 +188,9 @@ int main()
 
     // buttons
     win.create_button(5, 50, 50, 20, "Render", [&]()
-                      { render(cam, *world_bvh, win, 1,3,4); });
+                      { render(cam, world, win, 1,3,4); });
     win.create_button(5, 75, 75, 20, "HD Render", [&]()
-                      { render(cam, *world_bvh, win, 25,8,1); });
+                      { render(cam, world, win, 25,8,1); });
     win.create_button(5, cam.get_height() - 25, 50, 20, "Save!", [&]()
                       { write_to_file(cam.image_width, cam.get_height()); });
 
@@ -199,10 +198,12 @@ int main()
 
      std::thread physics_thread(physics_thread_func, std::ref(sim),
                                 std::chrono::milliseconds(SIM_RATE_MS));
-    cam.render(*world_bvh, color_buffer, win);
+    cam.render(world, color_buffer, win);
     while (!win.poll_for_event())
     {
+        sim.update_render();
         win.update();
+        cam.render(world, color_buffer, win); //TODO: FIX THIS
     }
 
     running = false;

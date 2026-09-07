@@ -65,7 +65,7 @@ public:
                 }
             }
         }
-        std::clog << "\rDone.                 \n";
+        //std::clog << "\rDone.                 \n";
         win.display_color_array(color_buffer);
     }
 

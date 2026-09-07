@@ -45,19 +45,14 @@ class hittable
 public:
   virtual ~hittable() = default;
   virtual aabb bounding_box() const = 0;
-  int id;
+  int id = -1;
+  virtual void position(vec3 &pos) = 0;
 
   virtual bool hit(const ray &r, interval ray_t, hit_record &rec) const = 0;
 
   void find_world_tangent(const ray &r, hit_record &rec, texture &tex) const
   {
-    // printf("%d\n",tex.size());
     color texel = tex.get_color_at_coordinate(rec.texture_sample_point.x(), rec.texture_sample_point.y());
-    //     std::cout << "normal color: " << texel << '\n';
-    //     std::cout << "plane normal: " << rec.normal << '\n';
-    //     std::cout << "rec.normal:    " << rec.normal << '\n';
-    // std::cout << "rec.tangent:   " << rec.tangent << '\n';
-    // std::cout << "rec.bitangent: " << rec.bitangent << '\n';
     vec3 tangent_normal(
         2.0 * texel.x() - 1.0,
         2.0 * texel.y() - 1.0,

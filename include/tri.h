@@ -126,7 +126,7 @@ public:
         }
     }
 
-    void position(vec3 &pos){
+    void position(vec3 &pos) override {
         for (int i = 0; i < 3; i++){
              copy(original_vertices[i] + pos, vertices[i]);
         }

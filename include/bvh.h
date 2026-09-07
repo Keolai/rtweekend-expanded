@@ -100,6 +100,10 @@ public:
         return bbox;
     }
 
+    void position(vec3 &pos){
+        return;
+    }
+
 private:
     shared_ptr<hittable> left;
     shared_ptr<hittable> right;

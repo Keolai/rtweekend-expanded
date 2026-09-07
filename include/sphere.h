@@ -71,6 +71,10 @@ public:
         center + rvec);
   }
 
+  void position(vec3 &pos) override {
+        center = pos;
+    }
+
 private:
   point3 center;
   double radius;

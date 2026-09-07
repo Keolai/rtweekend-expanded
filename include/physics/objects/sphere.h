@@ -7,7 +7,11 @@ class phy_sphere : public phy_hittable
 {
 public:
     phy_sphere(const vec3 &center, double radius)
-        : center(center), radius(std::fmax(0, radius)) {printf("new sphere\n");}
+        : center(center), radius(std::fmax(0, radius)) 
+        {
+            current_state.position = center;
+            next_state.position = center;
+        }
 
     bool hit(const ray &r, interval ray_t, phy_hit_record &rec) const override
     {
