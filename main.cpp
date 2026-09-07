@@ -33,6 +33,8 @@ std::string file_name = "out";
 
 std::vector<std::shared_ptr<text_box>> inputs;
 
+std::atomic<bool> run_sim{false};
+
 void write_to_file(int image_width, int image_height)
 {
     file_name = inputs[6]->get_text();
@@ -78,6 +80,10 @@ void gui_setup(window &win, int height)
     win.create_text(0, height - 50, "file name:");
     inputs.push_back(win.create_fixed_width_text_box(5, height - 40, "out", 8));
     win.create_text(72, height - 30, ".ppm");
+}
+
+void run_sim_toggle(){
+    run_sim = !run_sim;
 }
 
 void render(camera &cam, hittable &world, window &win, int samples, int shadow_samples, int image_res)
@@ -133,7 +139,9 @@ void physics_thread_func(physics_layer &sim, std::chrono::milliseconds interval)
     auto next_tick = std::chrono::steady_clock::now();
     while (running) {
         next_tick += interval;
+        if (run_sim){
         sim.step(interval.count());   // locking now happens inside step()
+        }
         std::this_thread::sleep_until(next_tick);
     }
 }
@@ -155,7 +163,7 @@ int main()
 
 
     sim.connect_objects(mySphere->id,sphere_physics_id);
-    sim.add_force(vec3(0,-1,0),1.8);
+    sim.add_force(vec3(0,-1,0),0.5);
 
     sim.set_render_objects(world);
     
@@ -187,12 +195,13 @@ int main()
     color_buffer.resize(cam.get_height() * cam.image_width);
 
     // buttons
-    win.create_button(5, 50, 50, 20, "Render", [&]()
-                      { render(cam, world, win, 1,3,4); });
-    win.create_button(5, 75, 75, 20, "HD Render", [&]()
-                      { render(cam, world, win, 25,8,1); });
-    win.create_button(5, cam.get_height() - 25, 50, 20, "Save!", [&]()
-                      { write_to_file(cam.image_width, cam.get_height()); });
+    // win.create_button(5, 50, 50, 20, "Render", [&]()
+    //                   { render(cam, world, win, 1,3,4); });
+    // win.create_button(5, 75, 75, 20, "HD Render", [&]()
+    //                   { render(cam, world, win, 25,8,1); });
+    // win.create_button(5, cam.get_height() - 25, 50, 20, "Save!", [&]()
+    //                   { write_to_file(cam.image_width, cam.get_height()); });
+    win.create_button(5,50,90,20,"Stop/Start", [&]() {run_sim_toggle();});
 
     populate_gui_start_state(cam);
 
