@@ -135,7 +135,7 @@ void physics_thread_func(physics_layer &sim, std::chrono::milliseconds interval)
         next_tick += interval;
         {
             std::lock_guard<std::mutex> lock(state_mutex);
-            sim.step(interval.count());
+            //sim.step(interval.count());
         }
         std::this_thread::sleep_until(next_tick);
     }
@@ -155,7 +155,7 @@ int main()
 
     physics_layer sim = physics_layer();
 
-    sim.add_sphere_to_world(vec3(0.),10);
+    int sphere_physics_id = sim.add_sphere_to_world(vec3(0.),10);
     sim.add_force(vec3(0,-1,0),9.8);
     
     world.add(make_shared<plane>(point3(0.0, -0.5, -1.0), 10, mat));
@@ -205,5 +205,6 @@ int main()
         win.update();
     }
 
+    running = false;
     physics_thread.join();
 }

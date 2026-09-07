@@ -12,6 +12,7 @@ class hittable_list : public hittable
 {
 public:
     std::vector<shared_ptr<hittable>> objects;
+    int cur_id = 0;
 
     hittable_list() {}
     hittable_list(shared_ptr<hittable> object) { add(object); }
@@ -21,6 +22,14 @@ public:
     void add(shared_ptr<hittable> object)
     {
         objects.push_back(object);
+        object->id = cur_id;
+        cur_id++;
+    }
+
+    void add(shared_ptr<hittable> object, int id) //incase it is a sub-object of a main object
+    {
+        objects.push_back(object);
+        object->id = id;
     }
 
     bool hit(const ray &r, interval ray_t, hit_record &rec) const override

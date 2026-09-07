@@ -35,6 +35,7 @@ public:
 
     state current_state = state();
     state next_state = state();
+    int id = -1;
 
     double mass = 1;
 

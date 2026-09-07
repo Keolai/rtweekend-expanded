@@ -25,7 +25,7 @@ public:
 
     mesh(const std::string &file_path,
          std::shared_ptr<material> mat, hittable_list &world)
-        : file_path(file_path), mat(mat) {load_model(world);}
+        : file_path(file_path), mat(mat), id(world.size()) {load_model(world);}
 
     bool load_model(hittable_list &world)
     {
@@ -132,7 +132,7 @@ public:
                                     n0, n1, n2},
                                 mat);
                         triangles.push_back(triangle);
-                        world.add(triangle);
+                        world.add(triangle,id);
                     }
                     else if (has_normals && has_uvs)
                     {
@@ -151,7 +151,7 @@ public:
                                     uv0, uv1, uv2},
                                 mat);
                         triangles.push_back(triangle);
-                        world.add(triangle);
+                        world.add(triangle,id);
                     }
                     else
                     {
@@ -160,7 +160,7 @@ public:
                             mat
                         );
                         triangles.push_back(triangle);
-                        world.add(triangle);
+                        world.add(triangle,id);
                     }
                 }
             }
@@ -246,6 +246,7 @@ private:
     std::shared_ptr<material> mat;
 
     std::vector<vec3> vertices;
+    int id = -1;
 
     bool loaded = false;
 };

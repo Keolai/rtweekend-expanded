@@ -12,6 +12,7 @@ class phy_hittable_list : public phy_hittable
 {
 public:
     std::vector<shared_ptr<phy_hittable>> objects;
+    int cur_id = 0;
 
     phy_hittable_list() {}
     phy_hittable_list(shared_ptr<phy_hittable> object) { add(object); }
@@ -20,7 +21,9 @@ public:
 
     void add(shared_ptr<phy_hittable> object)
     {
+        object->id = cur_id;
         objects.push_back(object);
+        cur_id++;
     }
 
     bool hit(const ray &r, interval ray_t, phy_hit_record &rec) const override

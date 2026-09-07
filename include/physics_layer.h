@@ -3,6 +3,10 @@
 
 #include "physics/sim.h"
 
+#include <iostream>
+#include <map>           // Required for std::map
+#include <unordered_map> // Required for std::unordered_map
+
 class physics_layer
 {
 public:
@@ -13,12 +17,13 @@ public:
         simulation.step(delta); // delta should be in ms
     }
 
-    void add_sphere_to_world(const vec3 &pos, double radius)
+    int add_sphere_to_world(const vec3 &pos, double radius)
     {
-        phy_sphere new_sphere = phy_sphere(pos, radius);
-        new_sphere.rigid = false;
+          auto new_sphere = std::make_shared<phy_sphere>(pos, radius);
+        new_sphere->rigid = false;
 
-        simulation.world.add(std::make_shared<phy_sphere>(new_sphere));
+        simulation.world.add(new_sphere);
+        return new_sphere->id;
     }
 
     void add_force(const vec3 &direction, double strength)
@@ -31,8 +36,14 @@ public:
         simulation.forces.push_back(new_force);
     }
 
+    void connect_objects(int renderId, int physicsId){
+        idMap.insert({renderId,physicsId});
+    }
+
 private:
     sim simulation = sim();
+
+    std::map<int,int> idMap; //should be renderId, then physicsId
 };
 
 #endif
