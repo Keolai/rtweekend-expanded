@@ -12,7 +12,7 @@
 class sim
 {
 public:
-    sim(){}
+    sim() {}
     int cur_step = 0;
     phy_hittable_list world;
 
@@ -20,7 +20,7 @@ public:
 
     int step(double dt) // dt should be ms;
     {
-        //printf("cur step: %d\n",cur_step);
+        // printf("cur step: %d\n",cur_step);
         for (int i = 0; i < world.size(); i++)
         {
             // iterate through list
@@ -30,28 +30,54 @@ public:
             {
                 cur_object->update_state(); // copy new state to old state
                 state new_state = state();
-                copy(cur_object->current_state,new_state);
+                copy(cur_object->current_state, new_state);
 
                 vec3 net_force = vec3(0.);
                 for (int j = 0; j < forces.size(); j++)
                 {
                     // apply forces/move
-                    std::shared_ptr<force> cur_force = forces[j];
-                    if (cur_force){
-                         net_force += cur_force->get_force(new_state.position, cur_object->mass);
+                    auto cur_force = forces[j];
+                    if (cur_force)
+                    {
+                        net_force += cur_force->get_force(new_state.position, new_state.velocity, cur_object->mass);
                     }
                 }
-
                 // Newton's second law
                 new_state.acceleration = net_force / cur_object->mass;
                 // Integrate velocity
-                new_state.velocity += new_state.acceleration * (dt/1000);
+                new_state.velocity += new_state.acceleration * (dt / 1000);
                 // Integrate position
-                new_state.position += new_state.velocity * (dt/1000);
-                //printf("NEW POSITION: %f, %f, %f\n",new_state.position.x(),new_state.position.y(),new_state.position.z());
-                copy(new_state,cur_object->next_state);
-                // check for collision
-                // react to collision
+                new_state.position += new_state.velocity * (dt / 1000);
+                // printf("NEW POSITION: %f, %f, %f\n",new_state.position.x(),new_state.position.y(),new_state.position.z());
+                copy(new_state, cur_object->next_state);
+            }
+        }
+        // loop over again, as potential new states have been populated
+        for (int i = 0; i < world.size(); i++)
+        {
+            // check for collision
+            // react to collision
+            auto cur_object = world.objects[i];
+            if (cur_object && !cur_object->rigid) // object can move
+            {
+                vec3 direction = cur_object->next_state.position - cur_object->current_state.position;
+                double length = direction.length();
+                direction = unit_vector(direction);
+                ray r = ray(cur_object->current_state.position, direction);
+                phy_hit_record rec;
+
+                for (int j = 0; j < world.size(); j++)
+                {
+                    auto test_object = world.objects[j];
+                    if (test_object && test_object->id != cur_object->id) // object can move
+                    { //test for hit
+                        if(test_object->hit(r, interval(0.001, length),rec)){
+                            printf("hit!\n");
+                            
+                        }
+
+                    }
+                }
             }
         }
         cur_step++;
@@ -68,30 +94,35 @@ public:
         forces = force_list;
     }
 
-    void add_objects_to_map(){
-        for (int i = 0; i < world.objects.size(); i++){
+    void add_objects_to_map()
+    {
+        for (int i = 0; i < world.objects.size(); i++)
+        {
             std::shared_ptr<phy_hittable> cur_object = world.objects[i];
             idMap[cur_object->id] = cur_object;
         }
     }
 
-    vec3 object_position(int id){
+    vec3 object_position(int id)
+    {
         auto cur_object = idMap[id];
-        if (!cur_object){
-            printf("ID NOT FOUND: %d\n",id);
-            return vec3(0.); //fix this
+        if (!cur_object)
+        {
+            printf("ID NOT FOUND: %d\n", id);
+            return vec3(0.); // fix this
         }
         state new_state = cur_object->current_state;
-        //printf("Physics POSITION: %f, %f, %f\n",new_state.position.x(),new_state.position.y(),new_state.position.z());
+        // printf("Physics POSITION: %f, %f, %f\n",new_state.position.x(),new_state.position.y(),new_state.position.z());
         return cur_object->current_state.position;
     }
 
-    bool object_is_mapped(int id){
+    bool object_is_mapped(int id)
+    {
         auto cur_object = idMap[id];
         return (bool)cur_object;
     }
 
-    private:
-        std::map<int,std::shared_ptr<phy_hittable>> idMap;
+private:
+    std::map<int, std::shared_ptr<phy_hittable>> idMap;
 };
 #endif
