@@ -57,7 +57,7 @@ public:
                 }
                 //color_buffer[(j * image_width) + i] = (pixel_samples_scale * pixel_color);
             }
-            if (j % 10 == 0)
+            if (j != 0 && j % 10 == 0)
             {
                 if (win.display_color_array(color_buffer))
                 { // should return if done

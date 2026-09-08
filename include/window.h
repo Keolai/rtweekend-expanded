@@ -101,7 +101,8 @@ public:
                 win_gui.check_for_clicks(event.button.x, event.button.y);
             }
 
-            if(event.type == SDL_EVENT_KEY_DOWN){
+            if (event.type == SDL_EVENT_KEY_DOWN)
+            {
                 win_gui.process_text_input(event.key.key);
             }
         }
@@ -125,13 +126,12 @@ public:
                     uint8_t blue = uint8_t(pixel.z());
                     uint8_t alpha = 255;
 
-                    pixels[index] = SDL_MapRGBA(
-                        SDL_GetPixelFormatDetails(SDL_PIXELFORMAT_RGBA8888),
-                        nullptr,
-                        red,
-                        green,
-                        blue,
-                        alpha);
+                    const SDL_PixelFormatDetails *fmt = SDL_GetPixelFormatDetails(SDL_PIXELFORMAT_RGBA8888);
+                    if (!fmt)
+                    {
+                        printf("SDL_GetPixelFormatDetails returned NULL! SDL error: %s\n", SDL_GetError());
+                    }
+                    pixels[index] = SDL_MapRGBA(fmt, nullptr, red, green, blue, alpha);
                 }
             }
             SDL_Event event;
@@ -174,8 +174,9 @@ public:
         return;
     }
 
-    text_t create_text(float x, float y, std::string text){
-        text_t text_line = ::text_t(x,y,text);
+    text_t create_text(float x, float y, std::string text)
+    {
+        text_t text_line = ::text_t(x, y, text);
         win_gui.add(text_line);
         return text_line;
     }
@@ -187,25 +188,25 @@ public:
         return;
     }
 
-    std::shared_ptr<text_box> create_text_box(float x, float y, std::string text){
+    std::shared_ptr<text_box> create_text_box(float x, float y, std::string text)
+    {
         auto box =
-        std::make_shared<text_box>(
-            x,
-            y,
-            text
-        );
+            std::make_shared<text_box>(
+                x,
+                y,
+                text);
         win_gui.add(box);
         return box;
     }
 
-    std::shared_ptr<text_box> create_fixed_width_text_box(float x, float y, std::string text, int length){
+    std::shared_ptr<text_box> create_fixed_width_text_box(float x, float y, std::string text, int length)
+    {
         auto box =
-        std::make_shared<fixed_width_text_box>(
-            x,
-            y,
-            length,
-            text
-        );
+            std::make_shared<fixed_width_text_box>(
+                x,
+                y,
+                length,
+                text);
         win_gui.add(box);
         return box;
     }

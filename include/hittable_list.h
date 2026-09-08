@@ -82,7 +82,7 @@ public:
         return objects.size();
     }
 
-    void position(vec3 &pos){
+    void position(vec3 &pos) override {
         return;
     }
 };

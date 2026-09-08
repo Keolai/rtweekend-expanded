@@ -163,12 +163,9 @@ int main()
 
 
     sim.connect_objects(mySphere->id,sphere_physics_id);
-    sim.add_force(vec3(0,-1,0),0.5);
+    sim.add_force(vec3(0,-1,0),0.5); //causing issues
 
     sim.set_render_objects(world);
-    
-    // world.add(make_shared<plane>(point3(0.0, -0.5, -1.0), 10, mat));
-    // //* END OF WORLD DEFINITION *//
 
     auto world_bvh = make_shared<bvh_node>(
         world.objects,
@@ -210,6 +207,7 @@ int main()
     cam.render(world, color_buffer, win);
     while (!win.poll_for_event())
     {
+        //printf("running!\n");
         sim.update_render();
         win.update();
         cam.render(world, color_buffer, win); //TODO: FIX THIS

@@ -41,6 +41,7 @@ public:
         new_force->strength = strength;
 
         simulation.forces.push_back(new_force);
+        return;
     }
 
     void connect_objects(int renderId, int physicsId){

@@ -54,7 +54,7 @@ public:
         return aabb(min_point, max_point);
     }
 
-    void position(vec3 &pos){
+    void position(vec3 &pos) override {
         return;
     }
 

@@ -100,7 +100,7 @@ public:
         return bbox;
     }
 
-    void position(vec3 &pos){
+    void position(vec3 &pos) override {
         return;
     }
 
