@@ -79,6 +79,7 @@ public:
         auto cur_object = idMap[id];
         if (!cur_object){
             printf("ID NOT FOUND: %d\n",id);
+            return vec3(0.); //fix this
         }
         state new_state = cur_object->current_state;
         //printf("Physics POSITION: %f, %f, %f\n",new_state.position.x(),new_state.position.y(),new_state.position.z());

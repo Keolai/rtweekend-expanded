@@ -155,14 +155,14 @@ int main()
     auto em = make_shared<emmissive>(color(0.5));
     auto tex_mat = make_shared<metal>("models/textures/checkered.ppm","models/textures/dirt.ppm",0.1);
 
-    physics_layer sim;
+    physics_layer sim; //something to do with sim
 
     int sphere_physics_id = sim.add_sphere_to_world(vec3(0,5,0),1.0);
     auto mySphere = std::make_shared<sphere>(point3(0,5,0), 1.0, tex_mat);
     world.add(mySphere);
 
 
-    sim.connect_objects(mySphere->id,sphere_physics_id);
+    //sim.connect_objects(mySphere->id,sphere_physics_id);
     sim.add_force(vec3(0,-1,0),0.5); //causing issues
 
     sim.set_render_objects(world);
