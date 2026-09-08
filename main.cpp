@@ -157,7 +157,7 @@ int main()
 
     physics_layer sim; //something to do with sim
 
-    sim.add_force(vec3(0,-1,0),0.5); 
+    sim.add_force(vec3(0,-1,0),5.0); 
     sim.add_wind_resistance(0.1,1); //wind resistance I guess
 
     int sphere_physics_id = sim.add_sphere_to_world(vec3(0,5,0),1.0,false); //Doesnt like when I add a force and a sphere, but can add two of either

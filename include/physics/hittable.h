@@ -32,12 +32,14 @@ public:
     virtual phy_aabb bounding_box() const = 0; // need?
 
     virtual bool hit(const ray &r, interval ray_t, phy_hit_record &rec) const = 0;
+    virtual double hit_adjuster() const = 0;
 
     state current_state = state();
     state next_state = state();
     int id = -1;
 
     double mass = 1;
+    double restitution = 5.0;
 
     virtual void update_state() = 0;
     bool rigid = true; // dont move!

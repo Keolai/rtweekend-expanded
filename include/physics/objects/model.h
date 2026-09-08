@@ -37,6 +37,10 @@ public:
         copy(next_state,current_state); //copy the next predicted state to the new state;
     }
 
+    double hit_adjuster() const override {
+        return 0;
+    }
+
 private:
    point3 pos = vec3(0);
 };

@@ -77,6 +77,10 @@ public:
     {
         // ...
     }
+
+    double hit_adjuster() const override {
+        return 0;
+    }
 };
 
 #endif

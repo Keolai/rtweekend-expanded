@@ -65,18 +65,31 @@ public:
                 direction = unit_vector(direction);
                 ray r = ray(cur_object->current_state.position, direction);
                 phy_hit_record rec;
+                phy_hit_record temp_rec;
+                bool hit_anything = false;
 
+                auto closest_so_far = length + cur_object->hit_adjuster();
                 for (int j = 0; j < world.size(); j++)
                 {
                     auto test_object = world.objects[j];
-                    if (test_object && test_object->id != cur_object->id) // object can move
-                    { //test for hit
-                        if(test_object->hit(r, interval(0.001, length),rec)){
-                            printf("hit!\n");
-                            
+                    if (test_object && test_object->id != cur_object->id)
+                    {
+                        if (test_object->hit(r, interval(0.001, closest_so_far), temp_rec))
+                        {
+                            hit_anything = true;
+                            closest_so_far = temp_rec.t;
+                            rec = temp_rec;
                         }
-
                     }
+                }
+                if (hit_anything)
+                {
+                    double restitution = cur_object->restitution;
+                    cur_object->next_state.velocity = cur_object->next_state.velocity - (1.0 + restitution) * dot(cur_object->next_state.velocity, rec.normal) * rec.normal;
+
+                    // snap to adjust for being inside of an object
+                    cur_object->next_state.position = rec.p;
+                    cur_object->next_state.position += rec.normal * 0.001;
                 }
             }
         }
