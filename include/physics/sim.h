@@ -90,6 +90,7 @@ public:
                     // snap to adjust for being inside of an object
                     cur_object->next_state.position = rec.p;
                     cur_object->next_state.position += rec.normal * 0.001;
+                     cur_object->next_state.position += rec.normal * cur_object->hit_adjuster();
                 }
             }
         }
