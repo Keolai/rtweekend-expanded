@@ -111,7 +111,6 @@ public:
 
     bool display_color_array(std::vector<color> &color_buffer)
     {
-
         for (int j = 0; j < height; j++)
         {
             for (int i = 0; i < width; i++)
@@ -141,18 +140,14 @@ public:
                 return true;
             }
         }
-
         SDL_UpdateTexture(
             texture,
             nullptr,
             pixels.data(),
             width * sizeof(uint32_t));
-
         SDL_RenderClear(renderer);
-
         SDL_RenderTexture(renderer, texture, nullptr, nullptr);
         win_gui.render(renderer);
-
         SDL_RenderPresent(renderer);
         return false;
     }
@@ -220,7 +215,7 @@ private:
     static SDL_Surface *surface;
     static SDL_Texture *texture;
     static gui win_gui;
-    bool app_done;
+    bool app_done = false;
 
     int quit_window()
     {
