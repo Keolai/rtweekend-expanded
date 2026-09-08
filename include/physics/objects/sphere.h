@@ -15,7 +15,8 @@ public:
 
     bool hit(const ray &r, interval ray_t, phy_hit_record &rec) const override
     {
-        vec3 oc = center - r.origin();
+        vec3 next_center = next_state.position;
+        vec3 oc = next_center - r.origin();
         auto a = r.direction().length_squared();
         auto h = dot(r.direction(), oc);
         auto c = oc.length_squared() - radius * radius;
@@ -37,9 +38,9 @@ public:
 
         rec.t = root;
         rec.p = r.at(rec.t);
-        vec3 outward_normal = (rec.p - center) / radius;
+        vec3 outward_normal = (rec.p - next_center) / radius;
         rec.set_normal(r, outward_normal);
-        vec3 p = unit_vector(rec.p - center);
+        vec3 p = unit_vector(rec.p - next_center);
 
         double u = 0.5 + atan2(p.z(), p.x()) / (2.0 * pi);
         double v = 0.5 - asin(p.y()) / pi;

@@ -24,10 +24,10 @@ public:
         simulation.step(delta);
     }
 
-    int add_sphere_to_world(const vec3 &pos, double radius)
+    int add_sphere_to_world(const vec3 &pos, double radius, bool is_rigid)
     {
         auto new_sphere = std::make_shared<phy_sphere>(pos, radius);
-        new_sphere->rigid = false;
+        new_sphere->rigid = is_rigid;
 
         simulation.world.add(new_sphere);
         return new_sphere->id;
@@ -42,6 +42,10 @@ public:
 
         simulation.forces.push_back(new_force);
         return;
+    }
+
+    void add_wind_resistance(double coefficient, double area){
+        simulation.forces.push_back(std::make_shared<wind_resistance>(0.47, pi * 1.0 * 1.0));
     }
 
     void connect_objects(int renderId, int physicsId){
@@ -71,7 +75,6 @@ public:
 private:
     sim simulation = sim();
     hittable_list render_world = hittable_list();
-
 
     std::map<int,int> idMap; //should be renderId, then physicsId
     std::mutex state_mutex_;   // now owned here, not a free global
