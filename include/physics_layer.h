@@ -60,9 +60,11 @@ public:
             int cur_render_id = cur_render_object->id;
             int cur_physics_id = idMap[cur_render_id];
              //printf("render id %d -> physics id %d\n", cur_render_id, cur_physics_id);
-            vec3 new_position = simulation.object_position(cur_physics_id);
+            if (simulation.object_is_mapped(cur_physics_id)){
+                vec3 new_position = simulation.object_position(cur_physics_id);
+                cur_render_object->position(new_position);
+            }
              //printf("NEW POSITION: %f, %f, %f\n",new_position.x(),new_position.y(),new_position.z());
-            cur_render_object->position(new_position);
         }
     }
 

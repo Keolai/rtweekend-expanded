@@ -86,6 +86,11 @@ public:
         return cur_object->current_state.position;
     }
 
+    bool object_is_mapped(int id){
+        auto cur_object = idMap[id];
+        return (bool)cur_object;
+    }
+
     private:
         std::map<int,std::shared_ptr<phy_hittable>> idMap;
 };
