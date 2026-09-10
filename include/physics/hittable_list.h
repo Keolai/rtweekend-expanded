@@ -82,6 +82,11 @@ public:
         return 0;
     }
 
+    vec3 closest_point_on_surface(const vec3 &pos) const override {
+
+       return vec3(0); 
+    }
+
      bool is_inside(const ray &r) const override
     {
         return false;

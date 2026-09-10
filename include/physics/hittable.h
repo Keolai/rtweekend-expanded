@@ -34,6 +34,7 @@ public:
     virtual bool hit(const ray &r, interval ray_t, phy_hit_record &rec) const = 0;
     virtual double hit_adjuster() const = 0;
     virtual bool is_inside(const ray &r) const = 0;
+    virtual vec3 closest_point_on_surface(const vec3 &pos) const = 0;
 
     state current_state = state();
     state next_state = state();
@@ -43,7 +44,7 @@ public:
     double restitution = 1.0;
 
     virtual void update_state() = 0;
-    bool rigid = true; // dont move!
+    bool is_static = true; // dont move!
 };
 
 #endif

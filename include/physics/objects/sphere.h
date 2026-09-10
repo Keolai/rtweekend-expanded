@@ -15,9 +15,10 @@ public:
 
     bool hit(const ray &r, interval ray_t, phy_hit_record &rec) const override
     {
-         if (is_inside(r)){
+        if (is_inside(r))
+        {
             printf("I am inside!\n");
-            //do something idk
+            // do something idk
         }
         vec3 next_center = next_state.position;
         vec3 oc = next_center - r.origin();
@@ -93,10 +94,16 @@ public:
         return (length_from_center) < (radius * radius);
     }
 
+    vec3 closest_point_on_surface(const vec3 &pos) const override
+    {
+        vec3 dir = unit_vector(next_state.position - pos); //next_state.position is the predicted center next step incase it is moving
+        vec3 point_on_surface = (next_state.position) + (dir * radius);
+        return point_on_surface;
+    }
+
 private:
     point3 center;
     double radius;
-
 };
 
 #endif

@@ -124,6 +124,11 @@ public:
         return false;
     }
 
+    vec3 closest_point_on_surface(const vec3 &pos) const override {
+
+       return vec3(0); 
+    }
+
 private:
     std::array<point3, 3> vertices;
     std::array<point3, 3> original_vertices; // original positions of vertices in model

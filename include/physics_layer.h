@@ -24,10 +24,10 @@ public:
         simulation.step(delta);
     }
 
-    int add_sphere_to_world(const vec3 &pos, double radius, bool is_rigid)
+    int add_sphere_to_world(const vec3 &pos, double radius, bool is_static)
     {
         auto new_sphere = std::make_shared<phy_sphere>(pos, radius);
-        new_sphere->rigid = is_rigid;
+        new_sphere->is_static = is_static;
 
         simulation.world.add(new_sphere);
         return new_sphere->id;

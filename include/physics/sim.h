@@ -26,7 +26,7 @@ public:
             // iterate through list
             auto cur_object = world.objects[i];
 
-            if (cur_object && !cur_object->rigid) // object can move
+            if (cur_object && !cur_object->is_static) // object can move
             {
                 cur_object->update_state(); // copy new state to old state
                 state new_state = state();
@@ -58,7 +58,7 @@ public:
             // check for collision
             // react to collision
             auto cur_object = world.objects[i];
-            if (cur_object && !cur_object->rigid) // object can move
+            if (cur_object && !cur_object->is_static) // object can move
             {
                 vec3 direction = cur_object->next_state.position - cur_object->current_state.position;
                 double length = direction.length();
@@ -67,6 +67,7 @@ public:
                 phy_hit_record rec;
                 phy_hit_record temp_rec;
                 bool hit_anything = false;
+                bool embedded = false;
 
                 auto closest_so_far = length + cur_object->hit_adjuster();
                 for (int j = 0; j < world.size(); j++)
@@ -74,7 +75,19 @@ public:
                     auto test_object = world.objects[j];
                     if (test_object && test_object->id != cur_object->id)
                     {
-                        if (test_object->hit(r, interval(0.001, closest_so_far), temp_rec))
+                        if (test_object->is_inside(r)){
+                            embedded = true;
+                            //really? maybe switch to modifying rec
+                            double restitution = cur_object->restitution;
+                            cur_object->next_state.position = cur_object->closest_point_on_surface(r.origin());
+                            vec3 out_dir = unit_vector(r.origin() - cur_object->next_state.position);
+                            cur_object->next_state.position += rec.normal * 0.001;
+                            cur_object->next_state.position += rec.normal * cur_object->hit_adjuster();
+
+                            cur_object->next_state.velocity = cur_object->next_state.velocity - (1.0 + restitution) * dot(cur_object->next_state.velocity, out_dir) * out_dir;
+
+                            break;
+                        } else if (test_object->hit(r, interval(0.001, closest_so_far), temp_rec))
                         {
                             hit_anything = true;
                             closest_so_far = temp_rec.t;
@@ -82,7 +95,7 @@ public:
                         }
                     }
                 }
-                if (hit_anything)
+                if (hit_anything && !embedded)
                 {
                     double restitution = cur_object->restitution;
                     cur_object->next_state.velocity = cur_object->next_state.velocity - (1.0 + restitution) * dot(cur_object->next_state.velocity, rec.normal) * rec.normal;
@@ -90,7 +103,7 @@ public:
                     // snap to adjust for being inside of an object
                     cur_object->next_state.position = rec.p;
                     cur_object->next_state.position += rec.normal * 0.001;
-                     cur_object->next_state.position += rec.normal * cur_object->hit_adjuster();
+                    cur_object->next_state.position += rec.normal * cur_object->hit_adjuster();
                 }
             }
         }
