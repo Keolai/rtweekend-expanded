@@ -160,8 +160,8 @@ int main()
     sim.add_force(vec3(0,-1,0),5.0); 
     sim.add_wind_resistance(0.1,1); //wind resistance I guess
 
-    int sphere_physics_id = sim.add_sphere_to_world(vec3(0,5,0),1.0,false); //Doesnt like when I add a force and a sphere, but can add two of either
-    auto mySphere = std::make_shared<sphere>(point3(0,5,0), 1.0, tex_mat);
+    int sphere_physics_id = sim.add_sphere_to_world(vec3(1,5,0),1.0,false); //Doesnt like when I add a force and a sphere, but can add two of either
+    auto mySphere = std::make_shared<sphere>(point3(1,5,0), 1.0, tex_mat);
     world.add(mySphere);
 
     int sphere_physics_id_rigid = sim.add_sphere_to_world(vec3(0,-5,0),4.0,true);

@@ -41,7 +41,8 @@ public:
     int id = -1;
 
     double mass = 1;
-    double restitution = 1.0;
+    double restitution = 0.5;
+    double friction = 0.1;
 
     virtual void update_state() = 0;
     bool is_static = true; // dont move!

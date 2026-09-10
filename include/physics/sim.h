@@ -81,9 +81,7 @@ public:
                             double restitution = cur_object->restitution;
                             cur_object->next_state.position = cur_object->closest_point_on_surface(r.origin());
                             vec3 out_dir = unit_vector(r.origin() - cur_object->next_state.position);
-                            cur_object->next_state.position += rec.normal * 0.001;
-                            cur_object->next_state.position += rec.normal * cur_object->hit_adjuster();
-
+                            cur_object->next_state.position += out_dir * (cur_object->hit_adjuster() + 0.001);
                             cur_object->next_state.velocity = cur_object->next_state.velocity - (1.0 + restitution) * dot(cur_object->next_state.velocity, out_dir) * out_dir;
 
                             break;
@@ -92,6 +90,8 @@ public:
                             hit_anything = true;
                             closest_so_far = temp_rec.t;
                             rec = temp_rec;
+                            vec3 true_outward = unit_vector(rec.p - test_object->next_state.position);
+                            printf("rec.normal: (%f,%f,%f)  true_outward: (%f,%f,%f)\n", rec.normal.x(),rec.normal.y(),rec.normal.z(), true_outward.x(),true_outward.y(),true_outward.z());
                         }
                     }
                 }
@@ -102,9 +102,9 @@ public:
 
                     // snap to adjust for being inside of an object
                     cur_object->next_state.position = rec.p;
-                    cur_object->next_state.position += rec.normal * 0.001;
-                    cur_object->next_state.position += rec.normal * cur_object->hit_adjuster();
+                    cur_object->next_state.position += rec.normal * (cur_object->hit_adjuster() + 0.001);
                 }
+                
             }
         }
         cur_step++;
