@@ -81,6 +81,11 @@ public:
     double hit_adjuster() const override {
         return 0;
     }
+
+     bool is_inside(const ray &r) const override
+    {
+        return false;
+    }
 };
 
 #endif

@@ -119,6 +119,11 @@ public:
         copy(next_state,current_state); //copy the next predicted state to the new state;
     }
 
+     bool is_inside(const ray &r) const override
+    {
+        return false;
+    }
+
 private:
     std::array<point3, 3> vertices;
     std::array<point3, 3> original_vertices; // original positions of vertices in model

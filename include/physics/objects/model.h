@@ -41,6 +41,11 @@ public:
         return 0;
     }
 
+    bool is_inside(const ray &r) const override
+    {
+        return false;
+    }
+
 private:
    point3 pos = vec3(0);
 };

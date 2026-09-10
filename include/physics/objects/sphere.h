@@ -7,14 +7,18 @@ class phy_sphere : public phy_hittable
 {
 public:
     phy_sphere(const vec3 &center, double radius)
-        : center(center), radius(std::fmax(0, radius)) 
-        {
-            current_state.position = center;
-            next_state.position = center;
-        }
+        : center(center), radius(std::fmax(0, radius))
+    {
+        current_state.position = center;
+        next_state.position = center;
+    }
 
     bool hit(const ray &r, interval ray_t, phy_hit_record &rec) const override
     {
+         if (is_inside(r)){
+            printf("I am inside!\n");
+            //do something idk
+        }
         vec3 next_center = next_state.position;
         vec3 oc = next_center - r.origin();
         auto a = r.direction().length_squared();
@@ -55,6 +59,7 @@ public:
             // north/south pole
             T = vec3(1, 0, 0);
         }
+
         return true;
     }
 
@@ -74,16 +79,24 @@ public:
 
     void update_state() override
     {
-       copy(next_state,current_state); //copy the next predicted state to the new state;
+        copy(next_state, current_state); // copy the next predicted state to the new state;
     }
 
-    double hit_adjuster() const override {
+    double hit_adjuster() const override
+    {
         return radius;
+    }
+
+    bool is_inside(const ray &r) const override
+    {
+        double length_from_center = (r.origin() - center).length_squared();
+        return (length_from_center) < (radius * radius);
     }
 
 private:
     point3 center;
     double radius;
+
 };
 
 #endif
