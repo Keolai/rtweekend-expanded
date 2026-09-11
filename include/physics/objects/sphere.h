@@ -15,11 +15,6 @@ public:
 
     bool hit(const ray &r, interval ray_t, phy_hit_record &rec) const override
     {
-        if (is_inside(r))
-        {
-            printf("I am inside!\n");
-            // do something idk
-        }
         vec3 next_center = next_state.position;
         vec3 oc = next_center - r.origin();
         auto a = r.direction().length_squared();
@@ -60,6 +55,8 @@ public:
             // north/south pole
             T = vec3(1, 0, 0);
         }
+        // printf("discriminant: %f\n", discriminant);
+        // printf("rec.t: %f\n", rec.t);
 
         return true;
     }
@@ -90,7 +87,7 @@ public:
 
     bool is_inside(const ray &r) const override
     {
-        double length_from_center = (r.origin() - center).length_squared();
+        double length_from_center = (r.origin() - next_state.position).length_squared();
         return (length_from_center) < (radius * radius);
     }
 

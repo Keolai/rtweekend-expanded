@@ -9,6 +9,8 @@
 #include <map>           // Required for std::map
 #include <unordered_map> // Required for std::unordered_map
 
+#define RESTING_THRESHOLD 0.4
+
 class sim
 {
 public:
@@ -50,6 +52,8 @@ public:
                 new_state.position += new_state.velocity * (dt / 1000);
                 // printf("NEW POSITION: %f, %f, %f\n",new_state.position.x(),new_state.position.y(),new_state.position.z());
                 copy(new_state, cur_object->next_state);
+            } else if (cur_object && cur_object->is_static){
+                copy(cur_object->current_state,cur_object->next_state);
             }
         }
         // loop over again, as potential new states have been populated
@@ -75,9 +79,10 @@ public:
                     auto test_object = world.objects[j];
                     if (test_object && test_object->id != cur_object->id)
                     {
-                        if (test_object->is_inside(r)){
+                        if (test_object->is_inside(r))
+                        {
                             embedded = true;
-                            //really? maybe switch to modifying rec
+                            // really? maybe switch to modifying rec
                             double restitution = cur_object->restitution;
                             cur_object->next_state.position = cur_object->closest_point_on_surface(r.origin());
                             vec3 out_dir = unit_vector(r.origin() - cur_object->next_state.position);
@@ -85,26 +90,41 @@ public:
                             cur_object->next_state.velocity = cur_object->next_state.velocity - (1.0 + restitution) * dot(cur_object->next_state.velocity, out_dir) * out_dir;
 
                             break;
-                        } else if (test_object->hit(r, interval(0.001, closest_so_far), temp_rec))
+                        }
+                        else if (test_object->hit(r, interval(0.001, closest_so_far), temp_rec))
                         {
                             hit_anything = true;
                             closest_so_far = temp_rec.t;
                             rec = temp_rec;
                             vec3 true_outward = unit_vector(rec.p - test_object->next_state.position);
-                            printf("rec.normal: (%f,%f,%f)  true_outward: (%f,%f,%f)\n", rec.normal.x(),rec.normal.y(),rec.normal.z(), true_outward.x(),true_outward.y(),true_outward.z());
+                            //printf("rec.normal: (%f,%f,%f)  true_outward: (%f,%f,%f)\n", rec.normal.x(), rec.normal.y(), rec.normal.z(), true_outward.x(), true_outward.y(), true_outward.z());
                         }
                     }
                 }
                 if (hit_anything && !embedded)
                 {
                     double restitution = cur_object->restitution;
-                    cur_object->next_state.velocity = cur_object->next_state.velocity - (1.0 + restitution) * dot(cur_object->next_state.velocity, rec.normal) * rec.normal;
+                    double v_normal = dot(cur_object->next_state.velocity, rec.normal);
+                    //printf("v_normal: %f  branch: %s\n", v_normal, (std::abs(v_normal) < RESTING_THRESHOLD) ? "resting" : "bounce");
+                    if (std::abs(v_normal) < RESTING_THRESHOLD)
+                    {
+                        //sliding
+                        cur_object->next_state.velocity = cur_object->next_state.velocity - (v_normal * rec.normal);
+                    }
+                    else
+                    {
+                        cur_object->next_state.velocity = cur_object->next_state.velocity - (1.0 + restitution) * v_normal * rec.normal;
+                    }
 
-                    // snap to adjust for being inside of an object
-                    cur_object->next_state.position = rec.p;
-                    cur_object->next_state.position += rec.normal * (cur_object->hit_adjuster() + 0.001);
+                    cur_object->next_state.position = rec.p + (rec.normal * (0.001 + cur_object->hit_adjuster()));
+
+                    double t_fraction = (length > 1e-9) ? (closest_so_far / length) : 0.0;
+                    double remaining_dt = dt * (1.0 - t_fraction);
+                    if (remaining_dt > 0.0)
+                    {
+                        cur_object->next_state.position += cur_object->next_state.velocity * (remaining_dt / 1000.0);
+                    }
                 }
-                
             }
         }
         cur_step++;
