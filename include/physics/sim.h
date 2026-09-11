@@ -34,16 +34,7 @@ public:
                 state new_state = state();
                 copy(cur_object->current_state, new_state);
 
-                vec3 net_force = vec3(0.);
-                for (int j = 0; j < forces.size(); j++)
-                {
-                    // apply forces/move
-                    auto cur_force = forces[j];
-                    if (cur_force)
-                    {
-                        net_force += cur_force->get_force(new_state.position, new_state.velocity, cur_object->mass);
-                    }
-                }
+                vec3 net_force = get_net_force(new_state.position, new_state.velocity, cur_object->mass);
                 // Newton's second law
                 new_state.acceleration = net_force / cur_object->mass;
                 // Integrate velocity
@@ -52,8 +43,10 @@ public:
                 new_state.position += new_state.velocity * (dt / 1000);
                 // printf("NEW POSITION: %f, %f, %f\n",new_state.position.x(),new_state.position.y(),new_state.position.z());
                 copy(new_state, cur_object->next_state);
-            } else if (cur_object && cur_object->is_static){
-                copy(cur_object->current_state,cur_object->next_state);
+            }
+            else if (cur_object && cur_object->is_static)
+            {
+                copy(cur_object->current_state, cur_object->next_state);
             }
         }
         // loop over again, as potential new states have been populated
@@ -97,7 +90,7 @@ public:
                             closest_so_far = temp_rec.t;
                             rec = temp_rec;
                             vec3 true_outward = unit_vector(rec.p - test_object->next_state.position);
-                            //printf("rec.normal: (%f,%f,%f)  true_outward: (%f,%f,%f)\n", rec.normal.x(), rec.normal.y(), rec.normal.z(), true_outward.x(), true_outward.y(), true_outward.z());
+                            // printf("rec.normal: (%f,%f,%f)  true_outward: (%f,%f,%f)\n", rec.normal.x(), rec.normal.y(), rec.normal.z(), true_outward.x(), true_outward.y(), true_outward.z());
                         }
                     }
                 }
@@ -105,10 +98,10 @@ public:
                 {
                     double restitution = cur_object->restitution;
                     double v_normal = dot(cur_object->next_state.velocity, rec.normal);
-                    //printf("v_normal: %f  branch: %s\n", v_normal, (std::abs(v_normal) < RESTING_THRESHOLD) ? "resting" : "bounce");
+                    // printf("v_normal: %f  branch: %s\n", v_normal, (std::abs(v_normal) < RESTING_THRESHOLD) ? "resting" : "bounce");
                     if (std::abs(v_normal) < RESTING_THRESHOLD)
                     {
-                        //sliding
+                        // sliding
                         cur_object->next_state.velocity = cur_object->next_state.velocity - (v_normal * rec.normal);
                     }
                     else
@@ -171,5 +164,20 @@ public:
 
 private:
     std::map<int, std::shared_ptr<phy_hittable>> idMap;
+
+    vec3 get_net_force(vec3 &position, vec3 &velocity, double mass)
+    {
+        vec3 net_force = vec3(0.);
+        for (int j = 0; j < forces.size(); j++)
+        {
+            // apply forces/move
+            auto cur_force = forces[j];
+            if (cur_force)
+            {
+                net_force += cur_force->get_force(position, velocity, mass);
+            }
+        }
+        return net_force;
+    }
 };
 #endif
