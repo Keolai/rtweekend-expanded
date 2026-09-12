@@ -21,6 +21,7 @@ struct face_vertex
 class mesh
 {
 public:
+    int id = -1;
     mesh() {}
 
     mesh(const std::string &file_path,
@@ -246,7 +247,6 @@ private:
     std::shared_ptr<material> mat;
 
     std::vector<vec3> vertices;
-    int id = -1;
 
     bool loaded = false;
 };

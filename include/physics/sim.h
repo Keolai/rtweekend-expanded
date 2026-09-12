@@ -4,6 +4,7 @@
 #include "hittable_list.h"
 #include "objects/force.h"
 #include "objects/sphere.h"
+#include "objects/model.h"
 #include "objects/tri.h"
 
 #include <map>           // Required for std::map

@@ -7,8 +7,6 @@
 class phy_tri : public phy_hittable
 {
 public:
-    int model_id = -1;
-
     phy_tri(const std::array<point3, 3> &vertices)
         : vertices(vertices)
     {
@@ -116,17 +114,23 @@ public:
 
     void update_state() override
     {
-        copy(next_state,current_state); //copy the next predicted state to the new state;
+        copy(next_state, current_state); // copy the next predicted state to the new state;
     }
 
-     bool is_inside(const ray &r) const override
+    bool is_inside(const ray &r) const override
     {
         return false;
     }
 
-    vec3 closest_point_on_surface(const vec3 &pos) const override {
+    double hit_adjuster() const override
+    {
+        return 0;
+    }
 
-       return vec3(0); 
+    vec3 closest_point_on_surface(const vec3 &pos) const override
+    {
+
+        return vec3(0);
     }
 
 private:

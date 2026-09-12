@@ -3,7 +3,9 @@
 
 #include "tri.h"
 
-struct face_vertex
+#include "../hittable.h"
+
+struct phy_face_vertex
 {
     int v = -1;
     int vn = -1;
@@ -17,7 +19,6 @@ public:
     int model_id = -1;
 
     model(const std::string &file_path) : file_path(file_path) {load_model();}
-
     model(int id) : model_id(id) {}
     model(std::vector<std::shared_ptr<phy_tri>> &tris, int id) : model_id(id) { triangles = tris; }
 
@@ -29,13 +30,11 @@ public:
 
     bool hit(const ray &r, interval ray_t, phy_hit_record &rec) const override
     {
-        phy_hit_record rec;
+        bool hit_anything = false;
         for (int i = 0; i < triangles.size(); i++)
         {
-            phy_hit_record rec;
             phy_hit_record temp_rec;
             auto current_tri = triangles[i];
-            bool hit_anything = false;
             std::shared_ptr<phy_tri> tri_hit; //maybe need to store idk
 
             auto closest_so_far = ray_t.max;
@@ -46,10 +45,8 @@ public:
                 rec = temp_rec;
                 tri_hit = current_tri;
             }
-
-
-            return hit_anything;
         }
+        return hit_anything;
     }
 
      bool load_model()
@@ -131,12 +128,7 @@ public:
                         vec3 v2 = vertices[face_indices[i + 1]];
 
                         triangles.push_back(
-                            std::make_shared<phy_tri>(
-                                std::array<point3, 3>{
-                                    v0,
-                                    v1,
-                                    v2}
-                                ));
+                            std::make_shared<phy_tri>(v0,v1,v2));
                     }
                 }
             }
@@ -154,6 +146,9 @@ public:
     void position(vec3 &newPos)
     {
         pos = newPos;
+        for (int i = 0; i < triangles.size(); i++){
+            triangles[i]->position(newPos); //maybe
+        }
     }
 
     void update_state() override
@@ -177,9 +172,32 @@ public:
         return vec3(0);
     }
 
+    void update_tri_id(int id){
+        for (int i = 0; i < triangles.size(); i++){
+            auto cur_tri = triangles[i];
+
+            cur_tri->id = id;
+        }
+        return; 
+    }
+
 private:
     point3 pos = vec3(0);
     std::string file_path;
+    std::vector<vec3> vertices;
+
+    int parse_face_index(const std::string &token)
+    {
+
+        std::stringstream ss(token);
+
+        std::string index_string;
+
+        std::getline(ss, index_string, '/');
+
+        return std::stoi(index_string);
+    }
+
     
 };
 

@@ -33,6 +33,15 @@ public:
         return new_sphere->id;
     }
 
+    int add_mesh_to_world(const std::string &file_path, bool is_static){
+        auto new_mesh = std::make_shared<model>(file_path);
+        new_mesh->is_static = is_static;
+
+        simulation.world.add(new_mesh);
+        new_mesh->update_tri_id(new_mesh->id); //IMPORTANT
+        return new_mesh->id;
+    }
+
     void add_force(const vec3 &direction, double strength)
     {
         auto new_force = std::make_shared<force>();
