@@ -10,7 +10,7 @@ class material
 {
 public:
   texture normal_texture;
-  double min_brightness = 0.; //this is for glowy textures
+  double min_brightness = 0.1; //this is for glowy textures
 
   virtual ~material() = default;
 

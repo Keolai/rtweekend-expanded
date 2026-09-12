@@ -160,16 +160,16 @@ int main()
     sim.add_force(vec3(0,-1,0),5.0); 
     sim.add_wind_resistance(0.1,1); //wind resistance I guess
 
-    int sphere_physics_id = sim.add_sphere_to_world(vec3(0.27,5,0),1.0,false); //Doesnt like when I add a force and a sphere, but can add two of either
-    auto mySphere = std::make_shared<sphere>(point3(0.27,5,0), 1.0, tex_mat);
+    int sphere_physics_id = sim.add_sphere_to_world(vec3(0.27,5,0),0.5,false); //Doesnt like when I add a force and a sphere, but can add two of either
+    auto mySphere = std::make_shared<sphere>(point3(0.27,5,0), 0.5, tex_mat);
     world.add(mySphere);
 
     // int sphere_physics_id_rigid = sim.add_sphere_to_world(vec3(0,-5,0),4.0,true);
     // auto mySphere2 = std::make_shared<sphere>(point3(0,-5,0), 4.0, mat);
     // world.add(mySphere2);
 
-    int model = sim.add_mesh_to_world("models/cube.obj",true);
-    auto my_model = std::make_shared<mesh>("models/cube.obj",tex_mat,world);
+    int model = sim.add_mesh_to_world("models/open_cube.obj",true);
+    auto my_model = std::make_shared<mesh>("models/open_cube.obj",tex_mat,world);
 
     sim.connect_objects(mySphere->id,sphere_physics_id);
     sim.connect_objects(my_model->id, model);
@@ -190,13 +190,15 @@ int main()
     cam.max_depth = 25;
 
     cam.vfov = 70;
-    cam.lookfrom = point3(1, 3, 5);
+    cam.lookfrom = point3(1, 3, 5); //0 5 10
     cam.lookat = point3(0, 0, -2);
     cam.vup = vec3(0, 1, 0);
-    cam.ambient = color(0.05);
-    cam.image_resolution = 4;
+    cam.ambient = color(1.0);
+    cam.image_resolution = 2;
+    cam.shadow_samples = 0;
 
-    cam.add_light(std::make_shared<spot_light>(point3(0,10,0), color(0.7,0.7,0.4), 150, 0.22,0.3,vec3(0,-1,0)));
+    //cam.add_light(std::make_shared<spot_light>(point3(1,3,5), color(0.7,0.7,0.4), 150, 0.22,0.3,vec3(0,0,-2)));
+    cam.add_light(std::make_shared<light>(point3(0,10,0),vec3(1.),1000));
     // window stuff
     window win = window(cam.get_height(), cam.image_width);
     gui_setup(win, cam.get_height());

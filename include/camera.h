@@ -177,8 +177,13 @@ private:
 
             if (rec.mat->scatter(r, rec, attenuation, scattered))
             {
-                indirect = attenuation * mix(ray_color(scattered, depth - 1, world),color(1.), rec.mat->min_brightness) * ambient;
+                //printf("attenuation: %f %f %f\n", attenuation.x(), attenuation.y(), attenuation.z());
+                // vec3 interim_color = ray_color(scattered, depth -1, world);
+                // printf("interim_color: %f %f %f\n", interim_color.x(), interim_color.y(), interim_color.z());
+                indirect = attenuation * mix(ray_color(scattered, depth - 1, world),color(1.), rec.mat->min_brightness) * ambient; //this is causing issues
+                //printf("indirect: %f %f %f\n", indirect.x(), indirect.y(), indirect.z());
                 direct = mix(direct,rec.mat->get_albedo(rec),rec.mat->min_brightness); //turn off shadows on glowy stuff
+               // printf("direct: %f %f %f\n", direct.x(), direct.y(), direct.z());
                 // return clamp(direct + indirect,0,1);
             }
             //check normals return rec.normal;

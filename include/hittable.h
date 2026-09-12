@@ -58,14 +58,24 @@ public:
         2.0 * texel.y() - 1.0,
         2.0 * texel.z() - 1.0);
 
-    tangent_normal =
-        unit_vector(tangent_normal);
+    if (tangent_normal.length_squared() < 1e-16)
+    {
+      // no valid perturbation available; keep the existing shading normal
+      return;
+    }
+    tangent_normal = unit_vector(tangent_normal);
 
-    vec3 world_normal =
-        unit_vector(
-            tangent_normal.x() * rec.tangent +
-            tangent_normal.y() * rec.bitangent +
-            tangent_normal.z() * rec.normal);
+    vec3 world_normal_unnorm =
+        tangent_normal.x() * rec.tangent +
+        tangent_normal.y() * rec.bitangent +
+        tangent_normal.z() * rec.normal;
+
+    if (world_normal_unnorm.length_squared() < 1e-16)
+    {
+      return; // degenerate tangent basis; bail out rather than propagate NaN
+    }
+
+    vec3 world_normal = unit_vector(world_normal_unnorm);
     rec.set_face_normal(r, world_normal);
   }
 };

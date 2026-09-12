@@ -37,10 +37,14 @@ public:
     bool hit(const ray &r, interval ray_t, hit_record &rec) const override
     {
         auto epsilon = 1e-8;
-
         vec3 edge1 = vertices.at(1) - vertices.at(0);
         vec3 edge2 = vertices.at(2) - vertices.at(0);
-        const vec3 normal = unit_vector(cross(edge1, edge2));
+        vec3 cross_e1e2 = cross(edge1, edge2);
+
+        if (cross_e1e2.length_squared() < 1e-16) // degenerate/zero-area triangle
+            return false;
+
+        const vec3 normal = cross_e1e2 / sqrt(cross_e1e2.length_squared());
 
         vec3 ray_cross_e2 = cross(r.direction(), edge2);
         float det = dot(edge1, ray_cross_e2);
@@ -82,12 +86,20 @@ public:
                 rec.set_geometry_normal(r, normal);
             }
             tangent_on_hit(rec.normal, rec);
-            //std::cout << "tri normal: " << rec.normal << '\n';
+            // std::cout << "tri normal: " << rec.normal << '\n';
             rec.t = t; // point where it hit
             rec.mat = mat;
             rec.texture_sample_point = interpolated_texture(u, v, UV);
+            if (std::isnan(rec.normal.x()))
+            {
+                printf("NaN normal! t=%f p=(%f,%f,%f)\n", rec.t, rec.p.x(), rec.p.y(), rec.p.z());
+            }
 
             find_world_tangent(r, rec, mat->normal_texture);
+            if (std::isnan(rec.normal.x()))
+            {
+                printf("NaN normal after world_tangent!! t=%f p=(%f,%f,%f)\n", rec.t, rec.p.x(), rec.p.y(), rec.p.z());
+            }
             return true;
         }
         else
@@ -120,15 +132,19 @@ public:
                v * arr[2];
     }
 
-    void copy_vertices(const std::array<point3, 3> &orig, std::array<point3, 3> &dest){
-        for (int i = 0; i < 3; i++){
-            copy(orig[i],dest[i]);
+    void copy_vertices(const std::array<point3, 3> &orig, std::array<point3, 3> &dest)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            copy(orig[i], dest[i]);
         }
     }
 
-    void position(vec3 &pos) override {
-        for (int i = 0; i < 3; i++){
-             copy(original_vertices[i] + pos, vertices[i]);
+    void position(vec3 &pos) override
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            copy(original_vertices[i] + pos, vertices[i]);
         }
     }
 
@@ -136,7 +152,7 @@ private:
     bool normals_stored;
     bool textcoords_stored;
     std::array<point3, 3> vertices;
-    std::array<point3, 3> original_vertices; //original positions of vertices in model
+    std::array<point3, 3> original_vertices; // original positions of vertices in model
     std::array<point3, 3> normals;
     std::array<point3, 3> UV;
     vec3 const_tangent;
@@ -151,31 +167,37 @@ private:
         vec3 deltaUV1 = UV.at(1) - UV.at(0);
         vec3 deltaUV2 = UV.at(2) - UV.at(0);
 
-        double f =
-            1.0 /
-            (deltaUV1.x() * deltaUV2.y() - deltaUV2.x() * deltaUV1.y());
+        double denom = deltaUV1.x() * deltaUV2.y() - deltaUV2.x() * deltaUV1.y();
 
-        const_tangent =
-            unit_vector(f *
-                        (deltaUV2.y() * edge1 -
-                         deltaUV1.y() * edge2));
+        if (std::fabs(denom) < 1e-8)
+        {
+            // Degenerate/duplicate UVs: fall back to an arbitrary tangent
+            // perpendicular to the face normal.
+             printf("degenerate UV determinant! denom=%e, UVs: (%f,%f) (%f,%f) (%f,%f)\n",
+            denom, UV[0].x(), UV[0].y(), UV[1].x(), UV[1].y(), UV[2].x(), UV[2].y());
+            vec3 n = unit_vector(cross(edge1, edge2));
+            vec3 ref = (std::fabs(n.x()) < 0.999) ? vec3(1, 0, 0) : vec3(0, 1, 0);
+            const_tangent = unit_vector(ref - dot(ref, n) * n);
+            const_bitangent = cross(n, const_tangent);
+            return;
+        }
 
-        const_bitangent =
-            unit_vector(f *
-                        (-deltaUV2.x() * edge1 +
-                         deltaUV1.x() * edge2));
+        double f = 1.0 / denom;
+
+        const_tangent = unit_vector(f * (deltaUV2.y() * edge1 - deltaUV1.y() * edge2));
+        const_bitangent = unit_vector(f * (-deltaUV2.x() * edge1 + deltaUV1.x() * edge2));
     }
 
     void tangent_on_hit(vec3 N, hit_record &rec) const
     {
-        vec3 tangent =
-            unit_vector(
-                const_tangent -
-                dot(const_tangent, N) * N);
+        vec3 ref = const_tangent;
+        if (std::fabs(dot(ref, N)) > 0.999)
+        {
+            ref = (std::fabs(N.x()) < 0.999) ? vec3(1, 0, 0) : vec3(0, 1, 0);
+        }
 
-        vec3 bitangent =
-            cross(N, tangent);
-        // Gram-Schmidt
+        vec3 tangent = unit_vector(ref - dot(ref, N) * N);
+        vec3 bitangent = cross(N, tangent);
 
         rec.tangent = tangent;
         rec.bitangent = bitangent;
