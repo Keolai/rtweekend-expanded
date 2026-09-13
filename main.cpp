@@ -153,7 +153,8 @@ int main()
     auto met = make_shared<metal>(color(0.8, 0.8, 0.8), 0.1); // teapot material
     auto mat = make_shared<lambertian>(color(0.8, 0.8, 0.0)); // world material
     auto em = make_shared<emmissive>(color(0.5));
-    auto tex_mat = make_shared<metal>("models/textures/checkered.ppm","models/textures/dirt.ppm",0.1);
+    auto tex_mat = make_shared<metal>("models/textures/checkered.ppm",0.1);
+     //mesh teapot_Model = mesh("models/solid_teapot.obj", tex_mat, world); this is to check stuff
 
     physics_layer sim; //something to do with sim
 
@@ -161,7 +162,7 @@ int main()
     sim.add_wind_resistance(0.1,1); //wind resistance I guess
 
     int sphere_physics_id = sim.add_sphere_to_world(vec3(0.27,5,0),0.5,false); //Doesnt like when I add a force and a sphere, but can add two of either
-    auto mySphere = std::make_shared<sphere>(point3(0.27,5,0), 0.5, tex_mat);
+    auto mySphere = std::make_shared<sphere>(point3(0.27,5,0), 0.5, mat);
     world.add(mySphere);
 
     // int sphere_physics_id_rigid = sim.add_sphere_to_world(vec3(0,-5,0),4.0,true);
@@ -193,12 +194,12 @@ int main()
     cam.lookfrom = point3(1, 3, 5); //0 5 10
     cam.lookat = point3(0, 0, -2);
     cam.vup = vec3(0, 1, 0);
-    cam.ambient = color(1.0);
-    cam.image_resolution = 2;
-    cam.shadow_samples = 0;
+    cam.ambient = color(0.00);
+    cam.image_resolution = 4;
+    cam.shadow_samples = 1;
 
     //cam.add_light(std::make_shared<spot_light>(point3(1,3,5), color(0.7,0.7,0.4), 150, 0.22,0.3,vec3(0,0,-2)));
-    cam.add_light(std::make_shared<light>(point3(0,10,0),vec3(1.),1000));
+    cam.add_light(std::make_shared<light>(point3(2,10,0),vec3(1.),100));
     // window stuff
     window win = window(cam.get_height(), cam.image_width);
     gui_setup(win, cam.get_height());
