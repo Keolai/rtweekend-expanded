@@ -27,6 +27,9 @@ public:
         {
             lighting += light_sample(world, r, rec) / shadow_samples;
         }
+        // if(shadow_samples == 0){
+        //     lighting += this->get_color() * rec.mat->get_albedo(shadow_rec);
+        // }
         return lighting;
     }
 

@@ -11,6 +11,7 @@
 #include <unordered_map> // Required for std::unordered_map
 
 #define RESTING_THRESHOLD 0.4
+#define MS_PER_SEC 1000
 
 class sim
 {
@@ -39,9 +40,9 @@ public:
                 // Newton's second law
                 new_state.acceleration = net_force / cur_object->mass;
                 // Integrate velocity
-                new_state.velocity += new_state.acceleration * (dt / 1000);
+                new_state.velocity += new_state.acceleration * (dt / MS_PER_SEC);
                 // Integrate position
-                new_state.position += new_state.velocity * (dt / 1000);
+                new_state.position += new_state.velocity * (dt / MS_PER_SEC);
                 // printf("NEW POSITION: %f, %f, %f\n",new_state.position.x(),new_state.position.y(),new_state.position.z());
                 copy(new_state, cur_object->next_state);
             }
@@ -116,7 +117,7 @@ public:
                     double remaining_dt = dt * (1.0 - t_fraction);
                     if (remaining_dt > 0.0)
                     {
-                        cur_object->next_state.position += cur_object->next_state.velocity * (remaining_dt / 1000.0);
+                        cur_object->next_state.position += cur_object->next_state.velocity * (remaining_dt / MS_PER_SEC);
                     }
                 }
             }

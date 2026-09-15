@@ -37,10 +37,10 @@ public:
     {
         initialize();
 
-        for (int j = 0; j < image_height; j+=image_resolution)
+        for (int j = 0; j < image_height; j += image_resolution)
         {
             std::clog << "\rScanlines remaining: " << (image_height - j) << ' ' << std::flush;
-            for (int i = 0; i < image_width; i+=image_resolution)
+            for (int i = 0; i < image_width; i += image_resolution)
             {
                 color pixel_color(0, 0, 0);
                 for (int sample = 0; sample < samples_per_pixel; sample++)
@@ -48,14 +48,17 @@ public:
                     ray r = get_ray(i, j);
                     pixel_color += ray_color(r, max_depth, world);
                 }
-                for (int k = 0; k < image_resolution; k++){
-                    for (int g = 0; g < image_resolution; g++){
-                        if((j+k) < image_height && (i + g) < image_width){
-                        color_buffer[((j+k) * image_width) + (i+g)] = (pixel_samples_scale * pixel_color);
+                for (int k = 0; k < image_resolution; k++)
+                {
+                    for (int g = 0; g < image_resolution; g++)
+                    {
+                        if ((j + k) < image_height && (i + g) < image_width)
+                        {
+                            color_buffer[((j + k) * image_width) + (i + g)] = (pixel_samples_scale * pixel_color);
                         }
                     }
                 }
-                //color_buffer[(j * image_width) + i] = (pixel_samples_scale * pixel_color);
+                // color_buffer[(j * image_width) + i] = (pixel_samples_scale * pixel_color);
             }
             if (j != 0 && j % 10 == 0)
             {
@@ -65,7 +68,7 @@ public:
                 }
             }
         }
-        //std::clog << "\rDone.                 \n";
+        // std::clog << "\rDone.                 \n";
         win.display_color_array(color_buffer);
     }
 
@@ -177,16 +180,23 @@ private:
 
             if (rec.mat->scatter(r, rec, attenuation, scattered))
             {
-                //printf("attenuation: %f %f %f\n", attenuation.x(), attenuation.y(), attenuation.z());
-                // vec3 interim_color = ray_color(scattered, depth -1, world);
-                // printf("interim_color: %f %f %f\n", interim_color.x(), interim_color.y(), interim_color.z());
-                indirect = attenuation * mix(ray_color(scattered, depth - 1, world),color(1.), rec.mat->min_brightness) * ambient; //this is causing issues
-                //printf("indirect: %f %f %f\n", indirect.x(), indirect.y(), indirect.z());
-                direct = mix(direct,rec.mat->get_albedo(rec),rec.mat->min_brightness); //turn off shadows on glowy stuff
-               // printf("direct: %f %f %f\n", direct.x(), direct.y(), direct.z());
+                // printf("attenuation: %f %f %f\n", attenuation.x(), attenuation.y(), attenuation.z());
+                //  vec3 interim_color = ray_color(scattered, depth -1, world);
+                //  printf("interim_color: %f %f %f\n", interim_color.x(), interim_color.y(), interim_color.z());
+                if (shadow_samples > 0)
+                {
+                    indirect = attenuation * mix(ray_color(scattered, depth - 1, world), color(1.), rec.mat->min_brightness) * ambient;
+                }
+                else
+                {
+                    indirect = attenuation * ray_color(scattered, depth - 1, world);
+                }
+                // printf("indirect: %f %f %f\n", indirect.x(), indirect.y(), indirect.z());
+                direct = mix(direct, rec.mat->get_albedo(rec), rec.mat->min_brightness); // turn off shadows on glowy stuff
+                // printf("direct: %f %f %f\n", direct.x(), direct.y(), direct.z());
                 // return clamp(direct + indirect,0,1);
             }
-            //check normals return rec.normal;
+            // check normals return rec.normal;
             return direct + indirect;
         }
 
@@ -196,7 +206,6 @@ private:
         return (1.0 - a) * color(1.0, 1.0, 1.0) + a * color(0.5, 0.7, 1.0); // this is the sky/light color/ray did not hit
     }
 
-    
     color ray_light(const hittable &world, const ray &r, hit_record &rec) const
     {
         if (lights.empty())

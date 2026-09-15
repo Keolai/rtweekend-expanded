@@ -156,10 +156,10 @@ int main()
     auto tex_mat = make_shared<metal>("models/textures/checkered.ppm",0.1);
      //mesh teapot_Model = mesh("models/solid_teapot.obj", tex_mat, world); this is to check stuff
 
-    physics_layer sim; //something to do with sim
+    physics_layer sim; 
 
-    sim.add_force(vec3(0,-1,0),5.0); 
-    sim.add_wind_resistance(0.1,1); //wind resistance I guess
+    sim.add_force(vec3(0,-1,0),5.0); //gravity
+    sim.add_wind_resistance(0.1,1); //wind resistance 
 
     // int sphere_physics_id = sim.add_sphere_to_world(vec3(0.27,5,0),0.5,false); 
     // auto mySphere = std::make_shared<sphere>(point3(0.27,5,0), 0.5, mat);
@@ -189,6 +189,7 @@ int main()
     sim.connect_objects(mySphere1->id,sphere_physics_id);
     sim.connect_objects(mySphere2->id,sphere_physics_id2);
     sim.connect_objects(my_model->id, model);
+    // END OF TWO BALLS HITTING DEMO
 
     //sim.connect_objects(mySphere2->id,sphere_physics_id_rigid);
 
@@ -210,8 +211,8 @@ int main()
     cam.lookat = point3(0, 0, -2);
     cam.vup = vec3(0, 1, 0);
     cam.ambient = color(0.00);
-    cam.image_resolution = 4;
-    cam.shadow_samples = 1;
+    cam.image_resolution = 2;
+    cam.shadow_samples = 0; //0 == no shadows
 
     //cam.add_light(std::make_shared<spot_light>(point3(1,3,5), color(0.7,0.7,0.4), 150, 0.22,0.3,vec3(0,0,-2)));
     cam.add_light(std::make_shared<light>(point3(2,10,0),vec3(1.),100));
