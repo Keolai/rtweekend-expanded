@@ -21,6 +21,13 @@ class local_force : public force
     }
 };
 
+class point_force : public local_force {
+     public:
+    vec3 get_force(vec3 &object_position, vec3 &object_velocity, double mass) const override{
+        return (std::sqrt((object_position - position).length()) * (double)strength * mass) * (object_position - position);
+    }
+}
+
 class wind_resistance : public force {
 public:
     wind_resistance(double coefficient, double area, double fluid_density = 1.225)
