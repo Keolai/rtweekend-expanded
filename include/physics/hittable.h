@@ -3,6 +3,7 @@
 
 #include "utilities/aabb.h"
 #include "utilities/state.h"
+#include <vector>
 
 class phy_hit_record
 {
@@ -35,13 +36,14 @@ public:
     virtual double hit_adjuster() const = 0;
     virtual bool is_inside(const ray &r) const = 0;
     virtual vec3 closest_point_on_surface(const vec3 &pos) const = 0;
+    virtual std::vector<vec3> get_vertices() const = 0;
 
     state current_state = state();
     state next_state = state();
     int id = -1;
 
     double mass = 1;
-    double restitution = 0.5;
+    double restitution = 1.;
     double friction = 0.1;
 
     virtual void update_state() = 0;

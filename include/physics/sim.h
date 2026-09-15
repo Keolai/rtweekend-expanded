@@ -59,65 +59,77 @@ public:
             auto cur_object = world.objects[i];
             if (cur_object && !cur_object->is_static) // object can move
             {
-                vec3 direction = cur_object->next_state.position - cur_object->current_state.position;
-                double length = direction.length();
-                direction = unit_vector(direction);
-                ray r = ray(cur_object->current_state.position, direction);
-                phy_hit_record rec;
-                phy_hit_record temp_rec;
-                bool hit_anything = false;
-                bool embedded = false;
-
-                auto closest_so_far = length + cur_object->hit_adjuster();
-                for (int j = 0; j < world.size(); j++)
+                std::vector<vec3> object_vertices = cur_object->get_vertices();
+                for (int k = 0; k < object_vertices.size(); k++) // test each vertex;
                 {
-                    auto test_object = world.objects[j];
-                    if (test_object && test_object->id != cur_object->id)
+                    vec3 direction = (cur_object->next_state.position + object_vertices[k]) - (cur_object->current_state.position + object_vertices[k]);
+                    double length = direction.length();
+                    direction = unit_vector(direction);
+                    ray r = ray(cur_object->current_state.position, direction); // current state is updated to new potential velocity
+                    phy_hit_record rec;
+                    phy_hit_record temp_rec;
+                    bool hit_anything = false;
+                    bool embedded = false;
+
+                    auto closest_so_far = length + cur_object->hit_adjuster();
+                    for (int j = 0; j < world.size(); j++)
                     {
-                        if (test_object->is_inside(r))
+                        auto test_object = world.objects[j];
+                        if (test_object && test_object->id != cur_object->id)
                         {
-                            embedded = true;
-                            // really? maybe switch to modifying rec
-                            double restitution = cur_object->restitution;
-                            cur_object->next_state.position = cur_object->closest_point_on_surface(r.origin());
-                            vec3 out_dir = unit_vector(r.origin() - cur_object->next_state.position);
-                            cur_object->next_state.position += out_dir * (cur_object->hit_adjuster() + 0.001);
-                            cur_object->next_state.velocity = cur_object->next_state.velocity - (1.0 + restitution) * dot(cur_object->next_state.velocity, out_dir) * out_dir;
+                            if (test_object->is_inside(r))
+                            {
+                                embedded = true;
+                                // really? maybe switch to modifying rec
+                                double restitution = cur_object->restitution;
+                                cur_object->next_state.position = cur_object->closest_point_on_surface(r.origin());
+                                vec3 out_dir = unit_vector(r.origin() - cur_object->next_state.position);
+                                cur_object->next_state.position += out_dir * (cur_object->hit_adjuster() + 0.001);
+                                cur_object->next_state.velocity = cur_object->next_state.velocity * restitution * dot(cur_object->next_state.velocity, out_dir) * out_dir;
 
-                            break;
+                                break;
+                            }
+                            else if (test_object->hit(r, interval(0.001, closest_so_far), temp_rec))
+                            {
+                                hit_anything = true;
+                                closest_so_far = temp_rec.t;
+                                rec = temp_rec;
+                                vec3 true_outward = unit_vector(rec.p - test_object->next_state.position);
+                                // printf("rec.normal: (%f,%f,%f)  true_outward: (%f,%f,%f)\n", rec.normal.x(), rec.normal.y(), rec.normal.z(), true_outward.x(), true_outward.y(), true_outward.z());
+                            }
                         }
-                        else if (test_object->hit(r, interval(0.001, closest_so_far), temp_rec))
+                    }
+                    if (hit_anything && !embedded)
+                    {
+                        double restitution = cur_object->restitution;
+                        double v_normal = dot(cur_object->next_state.velocity, rec.normal); //movement along velocity
+                        vec3 v_normal_vec = v_normal * rec.normal;
+                        vec3 v_tangent = cur_object->next_state.velocity - v_normal_vec; //movement along tangent
+
+                        // printf("v_normal: %f  branch: %s\n", v_normal, (std::abs(v_normal) < RESTING_THRESHOLD) ? "resting" : "bounce");
+                        if (std::abs(v_normal) < RESTING_THRESHOLD)
                         {
-                            hit_anything = true;
-                            closest_so_far = temp_rec.t;
-                            rec = temp_rec;
-                            vec3 true_outward = unit_vector(rec.p - test_object->next_state.position);
-                            // printf("rec.normal: (%f,%f,%f)  true_outward: (%f,%f,%f)\n", rec.normal.x(), rec.normal.y(), rec.normal.z(), true_outward.x(), true_outward.y(), true_outward.z());
+                            // sliding
+                            cur_object->next_state.velocity = cur_object->next_state.velocity - (v_normal * rec.normal);
                         }
-                    }
-                }
-                if (hit_anything && !embedded)
-                {
-                    double restitution = cur_object->restitution;
-                    double v_normal = dot(cur_object->next_state.velocity, rec.normal);
-                    // printf("v_normal: %f  branch: %s\n", v_normal, (std::abs(v_normal) < RESTING_THRESHOLD) ? "resting" : "bounce");
-                    if (std::abs(v_normal) < RESTING_THRESHOLD)
-                    {
-                        // sliding
-                        cur_object->next_state.velocity = cur_object->next_state.velocity - (v_normal * rec.normal);
-                    }
-                    else
-                    {
-                        cur_object->next_state.velocity = cur_object->next_state.velocity - (1.0 + restitution) * v_normal * rec.normal;
-                    }
+                        else
+                        {
+                            // cur_object->next_state.velocity = cur_object->next_state.velocity * restitution * v_normal * rec.normal;
+                            vec3 new_normal_vec = -restitution * v_normal_vec;
+                            vec3 new_tangent_vec = v_tangent * (1.0 - cur_object->friction);
 
-                    cur_object->next_state.position = rec.p + (rec.normal * (0.001 + cur_object->hit_adjuster()));
+                            cur_object->next_state.velocity = new_normal_vec + new_tangent_vec;
+                        }
 
-                    double t_fraction = (length > 1e-9) ? (closest_so_far / length) : 0.0;
-                    double remaining_dt = dt * (1.0 - t_fraction);
-                    if (remaining_dt > 0.0)
-                    {
-                        cur_object->next_state.position += cur_object->next_state.velocity * (remaining_dt / MS_PER_SEC);
+                        cur_object->next_state.position = rec.p + (rec.normal * (0.001 + cur_object->hit_adjuster()));
+
+                        double t_fraction = (length > 1e-9) ? (closest_so_far / length) : 0.0;
+                        double remaining_dt = dt * (1.0 - t_fraction);
+                        if (remaining_dt > 0.0)
+                        {
+                            // integrate
+                            cur_object->next_state.position += cur_object->next_state.velocity * (remaining_dt / MS_PER_SEC);
+                        }
                     }
                 }
             }

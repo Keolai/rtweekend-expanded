@@ -133,6 +133,11 @@ public:
         return vec3(0);
     }
 
+    std::vector<vec3> get_vertices() const override{
+        std::vector<vec3> tmp;
+        return tmp;
+    }
+
 private:
     std::array<point3, 3> vertices;
     std::array<point3, 3> original_vertices; // original positions of vertices in model

@@ -32,7 +32,7 @@ public:
         if (speed < 1e-6) return vec3(0.);
 
         vec3 drag_dir = -unit_vector(object_velocity);
-        double drag_magnitude = 0.5 * fluid_density * drag_coefficient * cross_section_area * speed * speed;
+        double drag_magnitude = 0.5 * fluid_density * drag_coefficient * cross_section_area * (speed * speed);
         return drag_dir * drag_magnitude;
     }
 

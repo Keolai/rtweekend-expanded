@@ -91,6 +91,10 @@ public:
     {
         return false;
     }
+    std::vector<vec3> get_vertices() const override {
+        std::vector<vec3> tmp;
+        return tmp;
+    }
 };
 
 #endif

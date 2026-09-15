@@ -98,6 +98,12 @@ public:
         return point_on_surface;
     }
 
+    std::vector<vec3> get_vertices() const override {
+        std::vector<vec3> tmp;
+        tmp.push_back(vec3(0.));
+        return tmp;
+    }
+
 private:
     point3 center;
     double radius;

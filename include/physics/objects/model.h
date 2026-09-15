@@ -181,10 +181,14 @@ public:
         return; 
     }
 
+    std::vector<vec3> get_vertices() const override{
+        return vertices;
+    }
+
 private:
     point3 pos = vec3(0);
     std::string file_path;
-    std::vector<vec3> vertices;
+    std::vector<vec3> vertices; //original vertices
 
     int parse_face_index(const std::string &token)
     {

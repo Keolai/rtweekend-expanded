@@ -20,7 +20,7 @@
 #include <chrono>
 #include <mutex>
 
-#define SIM_RATE_MS 10
+#define SIM_RATE_MS 30
 
 std::atomic<bool> running{true};
 std::mutex state_mutex;
@@ -161,35 +161,34 @@ int main()
     sim.add_force(vec3(0,-1,0),5.0); //gravity
     sim.add_wind_resistance(0.1,1); //wind resistance 
 
-    // int sphere_physics_id = sim.add_sphere_to_world(vec3(0.27,5,0),0.5,false); 
-    // auto mySphere = std::make_shared<sphere>(point3(0.27,5,0), 0.5, mat);
-    // world.add(mySphere);
+    // START OF BASIC DEMO
+    int sphere_physics_id = sim.add_sphere_to_world(vec3(0.27,5,0),0.5,false); 
+    auto mySphere = std::make_shared<sphere>(point3(0.27,5,0), 0.5, mat);
+    world.add(mySphere);
 
-    // // int sphere_physics_id_rigid = sim.add_sphere_to_world(vec3(0,-5,0),4.0,true);
-    // // auto mySphere2 = std::make_shared<sphere>(point3(0,-5,0), 4.0, mat);
-    // // world.add(mySphere2);
-    // int model = sim.add_mesh_to_world("models/trench_cube.obj",true);
-    // auto my_model = std::make_shared<mesh>("models/trench_cube.obj",mat,world);
+    int model = sim.add_mesh_to_world("models/open_cube.obj",true); //TODO: change
+    auto my_model = std::make_shared<mesh>("models/open_cube.obj",met,world);
 
-    // sim.connect_objects(mySphere->id,sphere_physics_id);
-    // sim.connect_objects(my_model->id, model);
-
-    // START OF TWO BALLS HITTING DEMO
-    int model = sim.add_mesh_to_world("models/trench_cube.obj",true);
-    auto my_model = std::make_shared<mesh>("models/trench_cube.obj",tex_mat,world);
-    
-    int sphere_physics_id = sim.add_sphere_to_world(vec3(-1,5,0),0.5,false); 
-    auto mySphere1 = std::make_shared<sphere>(point3(-1,5,0), 0.5, mat);
-    world.add(mySphere1);
-
-    int sphere_physics_id2 = sim.add_sphere_to_world(vec3(1,5,0),0.5,false); 
-    auto mySphere2 = std::make_shared<sphere>(point3(1,5,0), 0.5, mat);
-    world.add(mySphere2);
-
-    sim.connect_objects(mySphere1->id,sphere_physics_id);
-    sim.connect_objects(mySphere2->id,sphere_physics_id2);
+    sim.connect_objects(mySphere->id,sphere_physics_id);
     sim.connect_objects(my_model->id, model);
-    // END OF TWO BALLS HITTING DEMO
+    // END OF BASIC DEMO
+
+    // // START OF TWO BALLS HITTING DEMO
+    // int model = sim.add_mesh_to_world("models/trench_cube.obj",true);
+    // auto my_model = std::make_shared<mesh>("models/trench_cube.obj",tex_mat,world);
+    
+    // int sphere_physics_id = sim.add_sphere_to_world(vec3(-1,5,0),0.5,false); 
+    // auto mySphere1 = std::make_shared<sphere>(point3(-1,5,0), 0.5, mat);
+    // world.add(mySphere1);
+
+    // int sphere_physics_id2 = sim.add_sphere_to_world(vec3(1,5,0),0.5,false); 
+    // auto mySphere2 = std::make_shared<sphere>(point3(1,5,0), 0.5, mat);
+    // world.add(mySphere2);
+
+    // sim.connect_objects(mySphere1->id,sphere_physics_id);
+    // sim.connect_objects(mySphere2->id,sphere_physics_id2);
+    // sim.connect_objects(my_model->id, model);
+    // // END OF TWO BALLS HITTING DEMO
 
     //sim.connect_objects(mySphere2->id,sphere_physics_id_rigid);
 
