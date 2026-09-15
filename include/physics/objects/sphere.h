@@ -13,6 +13,15 @@ public:
         next_state.position = center;
     }
 
+    phy_sphere(const vec3 &center,const vec3 &velocity,double radius)
+        : center(center), radius(std::fmax(0, radius))
+    {
+        current_state.position = center;
+        next_state.position = center;
+        current_state.velocity = velocity;
+        next_state.velocity = velocity;
+    }
+
     bool hit(const ray &r, interval ray_t, phy_hit_record &rec) const override
     {
         vec3 next_center = next_state.position;

@@ -152,6 +152,7 @@ int main()
     hittable_list world;
     auto met = make_shared<metal>(color(0.8, 0.8, 0.8), 0.1); // teapot material
     auto mat = make_shared<lambertian>(color(0.8, 0.8, 0.0)); // world material
+    auto cube_mat = make_shared<lambertian>(color(0.5, 0.5, 0.5)); // world material
     auto em = make_shared<emmissive>(color(0.5));
     auto tex_mat = make_shared<metal>("models/textures/checkered.ppm",0.1);
      //mesh teapot_Model = mesh("models/solid_teapot.obj", tex_mat, world); this is to check stuff
@@ -160,16 +161,38 @@ int main()
 
     sim.add_force(vec3(0,-1,0),5.0); //gravity
     sim.add_wind_resistance(0.1,1); //wind resistance 
+    //sim.add_point_force(vec3(0,0,0),2);
 
     // START OF BASIC DEMO
-    int sphere_physics_id = sim.add_sphere_to_world(vec3(0.27,5,0),0.5,false); 
-    auto mySphere = std::make_shared<sphere>(point3(0.27,5,0), 0.5, mat);
-    world.add(mySphere);
+    int sphere_physics_1 = sim.add_sphere_to_world(vec3(0,2.5,0),vec3(0,4,0),0.3); 
+    auto mySphere1 = std::make_shared<sphere>(point3(0,2.5,0), 0.3, mat);
+    world.add(mySphere1);
 
-    int model = sim.add_mesh_to_world("models/open_cube.obj",true); //TODO: change
-    auto my_model = std::make_shared<mesh>("models/open_cube.obj",met,world);
+    int sphere_physics_2 = sim.add_sphere_to_world(vec3(1.2,2.5,0),vec3(4,0,0),0.3); 
+    auto mySphere2 = std::make_shared<sphere>(point3(1.2,2.5,0), 0.3, mat);
+    world.add(mySphere2);
 
-    sim.connect_objects(mySphere->id,sphere_physics_id);
+    int sphere_physics_3 = sim.add_sphere_to_world(vec3(-1.2,2.5,0),vec3(-4,0,0),0.3); 
+    auto mySphere3 = std::make_shared<sphere>(point3(-1.2,2.5,0), 0.3, mat);
+    world.add(mySphere3);
+
+    int sphere_physics_4 = sim.add_sphere_to_world(vec3(0,2.5,-1.2),vec3(0,0,-4),0.3); 
+    auto mySphere4 = std::make_shared<sphere>(point3(0,2.5,-1.2), 0.3, mat);
+    world.add(mySphere4);
+
+    int sphere_physics_5 = sim.add_sphere_to_world(vec3(0,2.5,1.2),vec3(0,0,4),0.3); 
+    auto mySphere5 = std::make_shared<sphere>(point3(0,2.5,1.2), 0.3, mat);
+    world.add(mySphere5);
+
+
+    int model = sim.add_mesh_to_world("models/closed_cube.obj",true); 
+    auto my_model = std::make_shared<mesh>("models/open_cube.obj",cube_mat,world);
+
+    sim.connect_objects(mySphere1->id,sphere_physics_1);
+    sim.connect_objects(mySphere2->id,sphere_physics_2);
+    sim.connect_objects(mySphere3->id,sphere_physics_3);
+    sim.connect_objects(mySphere4->id,sphere_physics_4);
+    sim.connect_objects(mySphere5->id,sphere_physics_5);
     sim.connect_objects(my_model->id, model);
     // END OF BASIC DEMO
 
@@ -206,12 +229,12 @@ int main()
     cam.max_depth = 25;
 
     cam.vfov = 70;
-    cam.lookfrom = point3(1, 3, 5); //0 5 10
-    cam.lookat = point3(0, 0, -2);
+    cam.lookfrom = point3(0, 3, 5); //0 5 10
+    cam.lookat = point3(0, 0, -1);
     cam.vup = vec3(0, 1, 0);
     cam.ambient = color(0.00);
-    cam.image_resolution = 2;
-    cam.shadow_samples = 0; //0 == no shadows
+    cam.image_resolution = 4;
+    cam.shadow_samples = 1; //0 == no shadows
 
     //cam.add_light(std::make_shared<spot_light>(point3(1,3,5), color(0.7,0.7,0.4), 150, 0.22,0.3,vec3(0,0,-2)));
     cam.add_light(std::make_shared<light>(point3(2,10,0),vec3(1.),100));
@@ -221,13 +244,13 @@ int main()
     color_buffer.resize(cam.get_height() * cam.image_width);
 
     // buttons
-    // win.create_button(5, 50, 50, 20, "Render", [&]()
-    //                   { render(cam, world, win, 1,3,4); });
+    win.create_button(5, 50, 50, 20, "Render", [&]()
+                      { render(cam, world, win, 1,3,4); });
     // win.create_button(5, 75, 75, 20, "HD Render", [&]()
     //                   { render(cam, world, win, 25,8,1); });
     // win.create_button(5, cam.get_height() - 25, 50, 20, "Save!", [&]()
     //                   { write_to_file(cam.image_width, cam.get_height()); });
-    win.create_button(5,50,90,20,"Stop/Start", [&]() {run_sim_toggle();});
+    win.create_button(5,75,90,20,"Stop/Start", [&]() {run_sim_toggle();});
 
     populate_gui_start_state(cam);
 

@@ -26,7 +26,7 @@ class point_force : public local_force {
     vec3 get_force(vec3 &object_position, vec3 &object_velocity, double mass) const override{
         return (std::sqrt((object_position - position).length()) * (double)strength * mass) * (object_position - position);
     }
-}
+};
 
 class wind_resistance : public force {
 public:

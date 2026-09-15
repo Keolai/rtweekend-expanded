@@ -33,6 +33,15 @@ public:
         return new_sphere->id;
     }
 
+    int add_sphere_to_world(const vec3 &pos,const vec3 &v, double radius)
+    {
+        auto new_sphere = std::make_shared<phy_sphere>(pos,v, radius);
+        new_sphere->is_static = false;
+
+        simulation.world.add(new_sphere);
+        return new_sphere->id;
+    }
+
     int add_mesh_to_world(const std::string &file_path, bool is_static){
         auto new_mesh = std::make_shared<model>(file_path);
         new_mesh->is_static = is_static;
@@ -48,6 +57,16 @@ public:
 
         new_force->direction = direction;
         new_force->strength = strength;
+
+        simulation.forces.push_back(new_force);
+        return;
+    }
+
+    void add_point_force(const vec3 &pos, double strength){
+        auto new_force = std::make_shared<point_force>();
+
+        new_force->strength = strength;
+        new_force->position = pos;
 
         simulation.forces.push_back(new_force);
         return;
