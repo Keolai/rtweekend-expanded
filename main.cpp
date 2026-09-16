@@ -218,31 +218,31 @@ int main()
     // END OF BASIC DEMO
 
     // // START OF TWO BALLS HITTING DEMO
-    // int model = sim.add_mesh_to_world("models/closed_cube.obj",true);
-    // auto my_model = std::make_shared<mesh>("models/open_cube.obj",cube_mat,world);
-
-    // int sphere_physics_id = sim.add_sphere_to_world(vec3(-1,2,0),vec3(2,0,0),0.5);
-    // auto mySphere1 = std::make_shared<sphere>(point3(-1,2,0), 0.5, mat);
-    // world.add(mySphere1);
-
-    // int sphere_physics_id2 = sim.add_sphere_to_world(vec3(1,2,0),vec3(-2,0,0),0.5);
-    // auto mySphere2 = std::make_shared<sphere>(point3(1,2,0), 0.5, mat);
-    // world.add(mySphere2);
-
-    // sim.connect_objects(mySphere1->id,sphere_physics_id);
-    // sim.connect_objects(mySphere2->id,sphere_physics_id2);
-    // sim.connect_objects(my_model->id, model);
-    // // END OF TWO BALLS HITTING DEMO
-
-    //CUBE FALLING DEMO
     int model = sim.add_mesh_to_world("models/closed_cube.obj",true);
     auto my_model = std::make_shared<mesh>("models/open_cube.obj",cube_mat,world);
 
-    int cube_physics_id = sim.add_mesh_to_world("models/cube.obj",false);
-    auto mySphere1 = std::make_shared<mesh>("models/cube.obj", mat, world);
+    int sphere_physics_id = sim.add_sphere_to_world(vec3(-1,2,0),vec3(2,0,0),0.5);
+    auto mySphere1 = std::make_shared<sphere>(point3(-1,2,0), 0.5, mat);
+    world.add(mySphere1);
 
-    sim.connect_objects(mySphere1->id,cube_physics_id);
+    int sphere_physics_id2 = sim.add_sphere_to_world(vec3(1,2,0),vec3(-2,0,0),0.5);
+    auto mySphere2 = std::make_shared<sphere>(point3(1,2,0), 0.5, mat);
+    world.add(mySphere2);
+
+    sim.connect_objects(mySphere1->id,sphere_physics_id);
+    sim.connect_objects(mySphere2->id,sphere_physics_id2);
     sim.connect_objects(my_model->id, model);
+    // // END OF TWO BALLS HITTING DEMO
+
+    //CUBE FALLING DEMO
+    // int model = sim.add_mesh_to_world("models/closed_cube.obj",true);
+    // auto my_model = std::make_shared<mesh>("models/open_cube.obj",cube_mat,world);
+
+    // int cube_physics_id = sim.add_mesh_to_world("models/cube.obj",false);
+    // auto mySphere1 = std::make_shared<mesh>("models/cube.obj", mat, world);
+
+    // sim.connect_objects(mySphere1->id,cube_physics_id);
+    // sim.connect_objects(my_model->id, model);
     //END OF CUBE FALLING
 
     // sim.connect_objects(mySphere2->id,sphere_physics_id_rigid);
