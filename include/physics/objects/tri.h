@@ -124,7 +124,7 @@ public:
 
     double hit_adjuster() const override
     {
-        return 0;
+        return 0.001;
     }
 
     vec3 closest_point_on_surface(const vec3 &pos) const override
