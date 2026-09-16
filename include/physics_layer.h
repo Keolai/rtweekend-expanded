@@ -100,6 +100,10 @@ public:
         }
     }
 
+    int get_step(){
+        return simulation.cur_step;
+    }
+
 private:
     sim simulation = sim();
     hittable_list render_world = hittable_list();

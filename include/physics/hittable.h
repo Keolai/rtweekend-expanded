@@ -43,7 +43,7 @@ public:
     int id = -1;
 
     double mass = 1;
-    double restitution = 1.;
+    double restitution = 0.4;
     double friction = 0.1;
 
     virtual void update_state() = 0;

@@ -85,9 +85,7 @@ public:
                                 cur_object->next_state.position = cur_object->closest_point_on_surface(r.origin());
                                 vec3 out_dir = unit_vector(r.origin() - cur_object->next_state.position);
                                 cur_object->next_state.position += out_dir * (cur_object->hit_adjuster() + 0.001);
-                                cur_object->next_state.velocity = cur_object->next_state.velocity * restitution * dot(cur_object->next_state.velocity, out_dir) * out_dir;
-
-                                break;
+                                cur_object->next_state.velocity = cur_object->next_state.velocity - (1.0 + restitution) * dot(cur_object->next_state.velocity, out_dir) * out_dir;
                             }
                             else if (test_object->hit(r, interval(0.001, closest_so_far), temp_rec))
                             {
@@ -99,12 +97,12 @@ public:
                             }
                         }
                     }
-                    if (hit_anything && !embedded)
+                    if (hit_anything)
                     {
                         double restitution = cur_object->restitution;
-                        double v_normal = dot(cur_object->next_state.velocity, rec.normal); //movement along velocity
+                        double v_normal = dot(cur_object->next_state.velocity, rec.normal); // movement along velocity
                         vec3 v_normal_vec = v_normal * rec.normal;
-                        vec3 v_tangent = cur_object->next_state.velocity - v_normal_vec; //movement along tangent
+                        vec3 v_tangent = cur_object->next_state.velocity - v_normal_vec; // movement along tangent
 
                         // printf("v_normal: %f  branch: %s\n", v_normal, (std::abs(v_normal) < RESTING_THRESHOLD) ? "resting" : "bounce");
                         if (std::abs(v_normal) < RESTING_THRESHOLD)
