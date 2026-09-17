@@ -89,6 +89,7 @@ public:
                             }
                             else if (test_object->hit(r, interval(0.001, closest_so_far), temp_rec))
                             {
+
                                 hit_anything = true;
                                 closest_so_far = temp_rec.t;
                                 rec = temp_rec;
@@ -104,7 +105,6 @@ public:
                         vec3 v_normal_vec = v_normal * rec.normal;
                         vec3 v_tangent = cur_object->next_state.velocity - v_normal_vec; // movement along tangent
 
-                        // printf("v_normal: %f  branch: %s\n", v_normal, (std::abs(v_normal) < RESTING_THRESHOLD) ? "resting" : "bounce");
                         if (std::abs(v_normal) < RESTING_THRESHOLD)
                         {
                             // sliding
@@ -118,8 +118,8 @@ public:
 
                             cur_object->next_state.velocity = new_normal_vec + new_tangent_vec;
                         }
-
-                        cur_object->next_state.position = rec.p + (rec.normal * (0.001 + cur_object->hit_adjuster()));
+                        
+                        cur_object->next_state.position += (rec.normal * 0.01); //this line is causing issues
 
                         double t_fraction = (length > 1e-9) ? (closest_so_far / length) : 0.0;
                         double remaining_dt = dt * (1.0 - t_fraction);
