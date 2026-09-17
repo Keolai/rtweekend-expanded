@@ -4,3 +4,4 @@ main.o
 out.ppm
 recording/*.ppm
 recording/converted_recordings/*.png
+OUTSIDELIBRARIES.txt

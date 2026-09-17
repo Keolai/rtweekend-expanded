@@ -105,21 +105,13 @@ public:
                         vec3 v_normal_vec = v_normal * rec.normal;
                         vec3 v_tangent = cur_object->next_state.velocity - v_normal_vec; // movement along tangent
 
-                        if (std::abs(v_normal) < RESTING_THRESHOLD)
-                        {
-                            // sliding
-                            cur_object->next_state.velocity = cur_object->next_state.velocity - (v_normal * rec.normal);
-                        }
-                        else
-                        {
-                            // cur_object->next_state.velocity = cur_object->next_state.velocity * restitution * v_normal * rec.normal;
-                            vec3 new_normal_vec = -restitution * v_normal_vec;
-                            vec3 new_tangent_vec = v_tangent * (1.0 - cur_object->friction);
+                        // cur_object->next_state.velocity = cur_object->next_state.velocity * restitution * v_normal * rec.normal;
+                        vec3 new_normal_vec = -restitution * v_normal_vec;
+                        vec3 new_tangent_vec = v_tangent * (1.0 - cur_object->friction);
 
-                            cur_object->next_state.velocity = new_normal_vec + new_tangent_vec;
-                        }
-                        
-                        cur_object->next_state.position += (rec.normal * 0.01); //this line is causing issues
+                        cur_object->next_state.velocity = new_normal_vec + new_tangent_vec;
+
+                        cur_object->next_state.position += (rec.normal * 0.01); // this line is causing issues
 
                         double t_fraction = (length > 1e-9) ? (closest_so_far / length) : 0.0;
                         double remaining_dt = dt * (1.0 - t_fraction);

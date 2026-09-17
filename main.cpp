@@ -20,7 +20,7 @@
 #include <chrono>
 #include <mutex>
 
-#define SIM_RATE_MS 30
+#define SIM_RATE_MS 2 //interval
 
 #define RECORDING false
 #define MAX_RECORDING_STEPS 80
@@ -235,6 +235,7 @@ int main()
     // END OF TWO BALLS HITTING DEMO
 
     //CUBE FALLING DEMO
+    sim.add_force(vec3(-1,0,0),1);
     int model = sim.add_mesh_to_world("models/closed_cube.obj",true);
     auto my_model = std::make_shared<mesh>("models/open_cube.obj",cube_mat,world);
 
