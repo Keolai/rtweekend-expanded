@@ -60,12 +60,15 @@ public:
             if (cur_object && !cur_object->is_static) // object can move
             {
                 std::vector<vec3> object_vertices = cur_object->get_vertices();
+                vec3 tmp_pos = cur_object->next_state.position;
+                vec3 tmp_vel = cur_object->next_state.velocity;
+                double highest_penetration = (cur_object->next_state.position - cur_object->current_state.position).length();
                 for (int k = 0; k < object_vertices.size(); k++) // test each vertex;
                 {
-                    vec3 direction = (cur_object->next_state.position + object_vertices[k]) - (cur_object->current_state.position + object_vertices[k]);
+                    vec3 direction = (cur_object->next_state.position) - (cur_object->current_state.position);
                     double length = direction.length();
                     direction = unit_vector(direction);
-                    ray r = ray(cur_object->current_state.position, direction); // current state is updated to new potential velocity
+                    ray r = ray(cur_object->current_state.position + object_vertices[k], direction); // current state is updated to new potential velocity
                     phy_hit_record rec;
                     phy_hit_record temp_rec;
                     bool hit_anything = false;
@@ -89,11 +92,12 @@ public:
                             }
                             else if (test_object->hit(r, interval(0.001, closest_so_far), temp_rec))
                             {
-
-                                hit_anything = true;
-                                closest_so_far = temp_rec.t;
-                                rec = temp_rec;
-                                vec3 true_outward = unit_vector(rec.p - test_object->next_state.position);
+                                if (temp_rec.t < (highest_penetration + 0.01))
+                                {
+                                    hit_anything = true;
+                                    closest_so_far = temp_rec.t;
+                                    rec = temp_rec;
+                                }
                                 // printf("rec.normal: (%f,%f,%f)  true_outward: (%f,%f,%f)\n", rec.normal.x(), rec.normal.y(), rec.normal.z(), true_outward.x(), true_outward.y(), true_outward.z());
                             }
                         }
@@ -101,17 +105,16 @@ public:
                     if (hit_anything)
                     {
                         double restitution = cur_object->restitution;
-                        double v_normal = dot(cur_object->next_state.velocity, rec.normal); // movement along velocity
+                        double v_normal = dot(tmp_vel, rec.normal); // movement along velocity
                         vec3 v_normal_vec = v_normal * rec.normal;
-                        vec3 v_tangent = cur_object->next_state.velocity - v_normal_vec; // movement along tangent
+                        vec3 v_tangent = tmp_vel - v_normal_vec; // movement along tangent
 
                         // cur_object->next_state.velocity = cur_object->next_state.velocity * restitution * v_normal * rec.normal;
                         vec3 new_normal_vec = -restitution * v_normal_vec;
                         vec3 new_tangent_vec = v_tangent * (1.0 - cur_object->friction);
 
                         cur_object->next_state.velocity = new_normal_vec + new_tangent_vec;
-
-                        cur_object->next_state.position += (rec.normal * 0.01); // this line is causing issues
+                        cur_object->next_state.position = tmp_pos + (rec.normal * 0.01); // this line is causing issues
 
                         double t_fraction = (length > 1e-9) ? (closest_so_far / length) : 0.0;
                         double remaining_dt = dt * (1.0 - t_fraction);
@@ -121,7 +124,7 @@ public:
                             cur_object->next_state.position += cur_object->next_state.velocity * (remaining_dt / MS_PER_SEC);
                         }
                     }
-                }
+                } // end of vertex loop
             }
         }
         cur_step++;

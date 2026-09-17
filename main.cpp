@@ -235,7 +235,7 @@ int main()
     // END OF TWO BALLS HITTING DEMO
 
     //CUBE FALLING DEMO
-    sim.add_force(vec3(-1,0,0),1);
+    sim.add_force(vec3(0,10,0),1);
     int model = sim.add_mesh_to_world("models/closed_cube.obj",true);
     auto my_model = std::make_shared<mesh>("models/open_cube.obj",cube_mat,world);
 
