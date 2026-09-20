@@ -65,7 +65,7 @@ public:
                 double highest_penetration = (cur_object->next_state.position - cur_object->current_state.position).length();
 
                 bool test_object_is_static = false;
-                std::shared_ptr<phy_hittable> saved_test_object; 
+                std::shared_ptr<phy_hittable> saved_test_object;
 
                 for (int k = 0; k < object_vertices.size(); k++) // test each vertex;
                 {
@@ -82,39 +82,52 @@ public:
                     for (int j = 0; j < world.size(); j++)
                     {
                         auto test_object = world.objects[j];
+                        // test_object_is_static = test_object->is_static;
                         if (test_object && test_object->id != cur_object->id)
                         {
                             if (test_object->is_inside(r))
                             {
                                 embedded = true;
-                                // really? maybe switch to modifying rec
-                                double restitution = cur_object->restitution;
-                                cur_object->next_state.position = cur_object->closest_point_on_surface(r.origin());
-                                vec3 out_dir = unit_vector(r.origin() - cur_object->next_state.position);
-                                cur_object->next_state.position += out_dir * (cur_object->hit_adjuster() + 0.001);
-                                cur_object->next_state.velocity = cur_object->next_state.velocity - (1.0 + restitution) * dot(cur_object->next_state.velocity, out_dir) * out_dir;
+                                if (test_object->is_static)
+                                {
+                                    // printf("embedded!\n");
+                                    // really? maybe switch to modifying rec
+                                    double restitution = cur_object->restitution;
+                                    cur_object->next_state.position = cur_object->closest_point_on_surface(r.origin());
+                                    vec3 out_dir = unit_vector(r.origin() - cur_object->next_state.position);
+                                    cur_object->next_state.position += out_dir * (cur_object->hit_adjuster() + 0.001);
+                                    cur_object->next_state.velocity = cur_object->next_state.velocity - (1.0 + restitution) * dot(cur_object->next_state.velocity, out_dir) * out_dir;
+                                }
+                                if (!test_object->is_static)
+                                {
+                                    // printf("running\n");
+                                    saved_test_object = test_object;
+                                }
                             }
                             else if (test_object->hit(r, interval(0.001, closest_so_far), temp_rec))
                             {
+                                // printf("candidate hit: t=%f  highest_penetration+0.01=%f  is_static=%d\n",
+                                //    temp_rec.t, highest_penetration + 0.01, test_object->is_static);
                                 if (temp_rec.t < (highest_penetration + 0.01))
                                 {
+                                    // printf("hit\n");
                                     hit_anything = true;
                                     closest_so_far = temp_rec.t;
                                     rec = temp_rec;
-                                    test_object_is_static = test_object->is_static;
+                                    test_object_is_static = test_object->is_static; // NEED
                                     saved_test_object = test_object;
                                 }
+                                embedded = false;
                                 // printf("rec.normal: (%f,%f,%f)  true_outward: (%f,%f,%f)\n", rec.normal.x(), rec.normal.y(), rec.normal.z(), true_outward.x(), true_outward.y(), true_outward.z());
                             }
                         }
                     }
+                    double t_fraction = (length > 1e-9) ? (closest_so_far / length) : 0.0;
+                    double remaining_dt = dt * (1.0 - t_fraction);
                     if (hit_anything)
                     {
-                        double t_fraction = (length > 1e-9) ? (closest_so_far / length) : 0.0;
-                        double remaining_dt = dt * (1.0 - t_fraction);
-                        if (test_object_is_static) //bounc normally
+                        if (test_object_is_static) // bounc normally
                         {
-                            printf("static\n");
                             double restitution = cur_object->restitution;
                             double v_normal = dot(tmp_vel, rec.normal); // movement along velocity
                             vec3 v_normal_vec = v_normal * rec.normal;
@@ -133,21 +146,35 @@ public:
                                 cur_object->next_state.position += cur_object->next_state.velocity * (remaining_dt / MS_PER_SEC);
                             }
                         }
-                        else //both are non-static
+                        else
                         {
-                             printf("not-static\n");
-                            printf("%f%f%f\n",  cur_object->next_state.velocity.x(),cur_object->next_state.velocity.y(),cur_object->next_state.velocity.z());
+                            printf("not-static: hit something\n");
+                            printf("%f%f%f\n", cur_object->next_state.velocity.x(), cur_object->next_state.velocity.y(), cur_object->next_state.velocity.z());
                             cur_object->next_state.velocity += saved_test_object->next_state.velocity;
-                            ///cur_object->next_state.position = tmp_pos + (rec.normal * 0.1); // this line is causing issues
+                            // cur_object->next_state.position = tmp_pos + (rec.normal * 0.1); // this line is causing issues
                             saved_test_object->next_state.velocity += tmp_vel;
-                            //saved_test_object->next_state.position = tmp_pos + (-rec.normal * 0.01); //issue
-                             if (remaining_dt > 0.0)
+                            // saved_test_object->next_state.position = tmp_pos + (-rec.normal * 0.01); //issue
+                            if (remaining_dt > 0.0)
                             {
                                 // integrate
                                 cur_object->next_state.position += cur_object->next_state.velocity * (remaining_dt / MS_PER_SEC);
                                 saved_test_object->next_state.position += saved_test_object->next_state.velocity * (remaining_dt / MS_PER_SEC);
                             }
-
+                        }
+                    }
+                    if (!test_object_is_static && embedded) // both are non-static
+                    {
+                        printf("not-static\n");
+                        printf("%f%f%f\n", cur_object->next_state.velocity.x(), cur_object->next_state.velocity.y(), cur_object->next_state.velocity.z());
+                        cur_object->next_state.velocity = saved_test_object->next_state.velocity;
+                        // cur_object->next_state.position = tmp_pos + (rec.normal * 0.1); // this line is causing issues
+                        saved_test_object->next_state.velocity = tmp_vel;
+                        // saved_test_object->next_state.position = tmp_pos + (-rec.normal * 0.01); //issue
+                        if (remaining_dt > 0.0)
+                        {
+                            // integrate
+                            cur_object->next_state.position += cur_object->next_state.velocity * (remaining_dt / MS_PER_SEC);
+                            saved_test_object->next_state.position += saved_test_object->next_state.velocity * (remaining_dt / MS_PER_SEC);
                         }
                     }
                 } // end of vertex loop
@@ -157,7 +184,8 @@ public:
         return 0;
     }
 
-    void set_world(phy_hittable_list &new_world)
+    void
+    set_world(phy_hittable_list &new_world)
     {
         world = new_world;
     }
