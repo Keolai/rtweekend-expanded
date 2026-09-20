@@ -63,12 +63,16 @@ public:
                 vec3 tmp_pos = cur_object->next_state.position;
                 vec3 tmp_vel = cur_object->next_state.velocity;
                 double highest_penetration = (cur_object->next_state.position - cur_object->current_state.position).length();
+
+                bool test_object_is_static = false;
+                std::shared_ptr<phy_hittable> saved_test_object; 
+
                 for (int k = 0; k < object_vertices.size(); k++) // test each vertex;
                 {
                     vec3 direction = (cur_object->next_state.position) - (cur_object->current_state.position);
                     double length = direction.length();
                     direction = unit_vector(direction);
-                    ray r = ray(cur_object->current_state.position + object_vertices[k], direction); // current state is updated to new potential velocity
+                    ray r = ray(cur_object->current_state.position + object_vertices[k] + (cur_object->hit_adjuster() * direction), direction); // current state is updated to new potential velocity
                     phy_hit_record rec;
                     phy_hit_record temp_rec;
                     bool hit_anything = false;
@@ -97,6 +101,8 @@ public:
                                     hit_anything = true;
                                     closest_so_far = temp_rec.t;
                                     rec = temp_rec;
+                                    test_object_is_static = test_object->is_static;
+                                    saved_test_object = test_object;
                                 }
                                 // printf("rec.normal: (%f,%f,%f)  true_outward: (%f,%f,%f)\n", rec.normal.x(), rec.normal.y(), rec.normal.z(), true_outward.x(), true_outward.y(), true_outward.z());
                             }
@@ -104,24 +110,44 @@ public:
                     }
                     if (hit_anything)
                     {
-                        double restitution = cur_object->restitution;
-                        double v_normal = dot(tmp_vel, rec.normal); // movement along velocity
-                        vec3 v_normal_vec = v_normal * rec.normal;
-                        vec3 v_tangent = tmp_vel - v_normal_vec; // movement along tangent
-
-                        // cur_object->next_state.velocity = cur_object->next_state.velocity * restitution * v_normal * rec.normal;
-                        vec3 new_normal_vec = -restitution * v_normal_vec;
-                        vec3 new_tangent_vec = v_tangent * (1.0 - cur_object->friction);
-
-                        cur_object->next_state.velocity = new_normal_vec + new_tangent_vec;
-                        cur_object->next_state.position = tmp_pos + (rec.normal * 0.01); // this line is causing issues
-
                         double t_fraction = (length > 1e-9) ? (closest_so_far / length) : 0.0;
                         double remaining_dt = dt * (1.0 - t_fraction);
-                        if (remaining_dt > 0.0)
+                        if (test_object_is_static) //bounc normally
                         {
-                            // integrate
-                            cur_object->next_state.position += cur_object->next_state.velocity * (remaining_dt / MS_PER_SEC);
+                            printf("static\n");
+                            double restitution = cur_object->restitution;
+                            double v_normal = dot(tmp_vel, rec.normal); // movement along velocity
+                            vec3 v_normal_vec = v_normal * rec.normal;
+                            vec3 v_tangent = tmp_vel - v_normal_vec; // movement along tangent
+
+                            // cur_object->next_state.velocity = cur_object->next_state.velocity * restitution * v_normal * rec.normal;
+                            vec3 new_normal_vec = -restitution * v_normal_vec;
+                            vec3 new_tangent_vec = v_tangent * (1.0 - cur_object->friction);
+
+                            cur_object->next_state.velocity = new_normal_vec + new_tangent_vec;
+                            cur_object->next_state.position = tmp_pos + (rec.normal * 0.01); // this line is causing issues
+
+                            if (remaining_dt > 0.0)
+                            {
+                                // integrate
+                                cur_object->next_state.position += cur_object->next_state.velocity * (remaining_dt / MS_PER_SEC);
+                            }
+                        }
+                        else //both are non-static
+                        {
+                             printf("not-static\n");
+                            printf("%f%f%f\n",  cur_object->next_state.velocity.x(),cur_object->next_state.velocity.y(),cur_object->next_state.velocity.z());
+                            cur_object->next_state.velocity += saved_test_object->next_state.velocity;
+                            ///cur_object->next_state.position = tmp_pos + (rec.normal * 0.1); // this line is causing issues
+                            saved_test_object->next_state.velocity += tmp_vel;
+                            //saved_test_object->next_state.position = tmp_pos + (-rec.normal * 0.01); //issue
+                             if (remaining_dt > 0.0)
+                            {
+                                // integrate
+                                cur_object->next_state.position += cur_object->next_state.velocity * (remaining_dt / MS_PER_SEC);
+                                saved_test_object->next_state.position += saved_test_object->next_state.velocity * (remaining_dt / MS_PER_SEC);
+                            }
+
                         }
                     }
                 } // end of vertex loop
