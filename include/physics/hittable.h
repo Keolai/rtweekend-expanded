@@ -5,11 +5,14 @@
 #include "utilities/state.h"
 #include <vector>
 
+class phy_hittable;
+
 class phy_hit_record
 {
 public:
     point3 p;
     vec3 normal;
+    const phy_hittable* hit_object = nullptr;
 
     vec3 bay_coord;
 

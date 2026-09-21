@@ -6,6 +6,7 @@
 #include "objects/sphere.h"
 #include "objects/model.h"
 #include "objects/tri.h"
+#include "utilities/phy_bvh.h"
 
 #include <map>           // Required for std::map
 #include <unordered_map> // Required for std::unordered_map
@@ -19,11 +20,16 @@ public:
     sim() {}
     int cur_step = 0;
     phy_hittable_list world;
+    std::shared_ptr<phy_bvh_node> world_bvh;
 
     std::vector<shared_ptr<force>> forces;
 
     int step(double dt) // dt should be ms;
     {
+        world_bvh = make_shared<phy_bvh_node>(
+            world.objects,
+            0,
+            world.objects.size());
         // printf("cur step: %d\n",cur_step);
         for (int i = 0; i < world.size(); i++)
         {
@@ -79,9 +85,11 @@ public:
                     bool embedded = false;
 
                     auto closest_so_far = length + cur_object->hit_adjuster();
-                    for (int j = 0; j < world.size(); j++)
+                    for (int j = 0; j < *world_bvh.size(); j++)
                     {
-                        auto test_object = world.objects[j];
+                        if(*world_bvh->hit(r,interval(0.001, closest_so_far), temp_rec)){
+                        auto test_object = std::make_shared<hittable>(temp_rec.hit_object); //just assign whatever was hit to test
+
                         // test_object_is_static = test_object->is_static;
                         if (test_object && test_object->id != cur_object->id)
                         {
@@ -149,6 +157,7 @@ public:
                                 }
                             }
                         }
+                    }
                     }
                     double t_fraction = (length > 1e-9) ? (closest_so_far / length) : 0.0;
                     double remaining_dt = dt * (1.0 - t_fraction);

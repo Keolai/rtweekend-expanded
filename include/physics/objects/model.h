@@ -44,6 +44,7 @@ public:
                 closest_so_far = temp_rec.t;
                 rec = temp_rec;
                 tri_hit = current_tri;
+                rec.hit_object = temp_rec.hit_object;
             }
         }
         return hit_anything;

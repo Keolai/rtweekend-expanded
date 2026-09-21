@@ -64,6 +64,7 @@ public:
             // std::cout << "phy_tri normal: " << rec.normal << '\n';
             rec.t = t; // point where it hit
             rec.bay_coord = bay_coordinate(u, v);
+            rec.hit_object = this;
             return true;
         }
         else

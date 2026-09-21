@@ -2,6 +2,7 @@
 #define PHYSICS_phy_sphere_H
 
 #include "../hittable.h"
+#include "../utilities/aabb.h"
 
 class phy_sphere : public phy_hittable
 {
@@ -64,6 +65,8 @@ public:
             // north/south pole
             T = vec3(1, 0, 0);
         }
+
+        rec.hit_object = this;
         // printf("discriminant: %f\n", discriminant);
         // printf("rec.t: %f\n", rec.t);
 
