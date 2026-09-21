@@ -113,6 +113,10 @@ public:
         return tmp;
     }
 
+    double get_radius(){
+        return radius;
+    }
+
 private:
     point3 center;
     double radius;
