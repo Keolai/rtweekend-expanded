@@ -122,8 +122,8 @@ public:
                                         double restitution = cur_object->restitution;
                                         cur_object->next_state.position = cur_object->closest_point_on_surface(r.origin());
                                         vec3 out_dir = unit_vector(r.origin() - cur_object->next_state.position);
-                                        cur_object->next_state.position += out_dir * (cur_object->hit_adjuster() + 0.001);
                                         cur_object->next_state.velocity = cur_object->next_state.velocity - (1.0 + restitution) * dot(cur_object->next_state.velocity, out_dir) * out_dir;
+                                        cur_object->next_state.position += out_dir * (cur_object->hit_adjuster() + 0.001);
                                     }
                                     if (!test_object->is_static)
                                     {
