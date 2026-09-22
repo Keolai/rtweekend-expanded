@@ -93,7 +93,7 @@ public:
  
     bool hit(const ray &r,
              interval ray_t,
-             phy_hit_record &rec) const override
+             phy_hit_record &rec) override
     {
         if (!left || !bbox.hit(r, ray_t))
             return false;

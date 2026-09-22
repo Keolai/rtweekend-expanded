@@ -85,11 +85,11 @@ public:
                     bool embedded = false;
 
                     auto closest_so_far = length + cur_object->hit_adjuster();
-                    for (int j = 0; j < *world_bvh.size(); j++)
-                    {
-                        if(*world_bvh->hit(r,interval(0.001, closest_so_far), temp_rec)){
-                        auto test_object = std::make_shared<hittable>(temp_rec.hit_object); //just assign whatever was hit to test
-
+                    // for (int j = 0; j < *world_bvh.size(); j++)
+                    // {
+                        if(world_bvh->hit(r,interval(0.001, closest_so_far), temp_rec)){
+                        auto test_object = temp_rec.hit_object; //just assign whatever was hit to test
+                        //phy_hittable* test_object = rec.hit_object;
                         // test_object_is_static = test_object->is_static;
                         if (test_object && test_object->id != cur_object->id)
                         {
@@ -157,7 +157,7 @@ public:
                                 }
                             }
                         }
-                    }
+                    //}
                     }
                     double t_fraction = (length > 1e-9) ? (closest_so_far / length) : 0.0;
                     double remaining_dt = dt * (1.0 - t_fraction);

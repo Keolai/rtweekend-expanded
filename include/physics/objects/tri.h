@@ -23,7 +23,7 @@ public:
         original_vertices[2] = v3;
     }
 
-    bool hit(const ray &r, interval ray_t, phy_hit_record &rec) const override
+    bool hit(const ray &r, interval ray_t, phy_hit_record &rec) override
     {
         auto epsilon = 1e-8;
 
@@ -64,7 +64,7 @@ public:
             // std::cout << "phy_tri normal: " << rec.normal << '\n';
             rec.t = t; // point where it hit
             rec.bay_coord = bay_coordinate(u, v);
-            rec.hit_object = this;
+            rec.hit_object = shared_from_this();
             return true;
         }
         else

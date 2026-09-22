@@ -12,7 +12,7 @@ class phy_hit_record
 public:
     point3 p;
     vec3 normal;
-    const phy_hittable* hit_object = nullptr;
+    std::shared_ptr<phy_hittable> hit_object = nullptr;
 
     vec3 bay_coord;
 
@@ -29,13 +29,13 @@ public:
     }
 };
 
-class phy_hittable
+class phy_hittable: public std::enable_shared_from_this<phy_hittable>
 {
 public:
     virtual ~phy_hittable() = default;
     virtual phy_aabb bounding_box() const = 0; // need?
 
-    virtual bool hit(const ray &r, interval ray_t, phy_hit_record &rec) const = 0;
+    virtual bool hit(const ray &r, interval ray_t, phy_hit_record &rec) = 0;
     virtual double hit_adjuster() const = 0;
     virtual bool is_inside(const ray &r) const = 0;
     virtual vec3 closest_point_on_surface(const vec3 &pos) const = 0;

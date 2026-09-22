@@ -18,7 +18,7 @@ public:
 
     int model_id = -1;
 
-    model(const std::string &file_path) : file_path(file_path) {load_model();}
+    model(const std::string &file_path) : file_path(file_path) { load_model(); }
     model(int id) : model_id(id) {}
     model(std::vector<std::shared_ptr<phy_tri>> &tris, int id) : model_id(id) { triangles = tris; }
 
@@ -28,14 +28,14 @@ public:
         triangles.push_back(new_tri);
     }
 
-    bool hit(const ray &r, interval ray_t, phy_hit_record &rec) const override
+    bool hit(const ray &r, interval ray_t, phy_hit_record &rec) override
     {
         bool hit_anything = false;
         for (int i = 0; i < triangles.size(); i++)
         {
             phy_hit_record temp_rec;
             auto current_tri = triangles[i];
-            std::shared_ptr<phy_tri> tri_hit; //maybe need to store idk
+            std::shared_ptr<phy_tri> tri_hit; // maybe need to store idk
 
             auto closest_so_far = ray_t.max;
             if (current_tri->hit(r, interval(0.001, closest_so_far), temp_rec)) // ray hit something
@@ -44,13 +44,13 @@ public:
                 closest_so_far = temp_rec.t;
                 rec = temp_rec;
                 tri_hit = current_tri;
-                rec.hit_object = temp_rec.hit_object;
+                rec.hit_object = shared_from_this();
             }
         }
         return hit_anything;
     }
 
-     bool load_model()
+    bool load_model()
     {
 
         std::ifstream file(file_path);
@@ -129,26 +129,38 @@ public:
                         vec3 v2 = vertices[face_indices[i + 1]];
 
                         triangles.push_back(
-                            std::make_shared<phy_tri>(v0,v1,v2));
+                            std::make_shared<phy_tri>(v0, v1, v2));
                     }
                 }
             }
-        } //DONE READING LINES
+        } // DONE READING LINES
 
         return true;
     }
 
-
     phy_aabb bounding_box() const override // need to add
     {
-        return phy_aabb();
+        if (triangles.empty())
+            return phy_aabb();
+
+        phy_aabb box = triangles[0]->bounding_box();
+
+        for (size_t i = 1; i < triangles.size(); i++)
+        {
+            box = surrounding_box(
+                box,
+                triangles[i]->bounding_box());
+        }
+
+        return box;
     }
 
     void position(vec3 &newPos)
     {
         pos = newPos;
-        for (int i = 0; i < triangles.size(); i++){
-            triangles[i]->position(newPos); //maybe
+        for (int i = 0; i < triangles.size(); i++)
+        {
+            triangles[i]->position(newPos); // maybe
         }
     }
 
@@ -173,23 +185,26 @@ public:
         return vec3(0);
     }
 
-    void update_tri_id(int id){
-        for (int i = 0; i < triangles.size(); i++){
+    void update_tri_id(int id)
+    {
+        for (int i = 0; i < triangles.size(); i++)
+        {
             auto cur_tri = triangles[i];
 
             cur_tri->id = id;
         }
-        return; 
+        return;
     }
 
-    std::vector<vec3> get_vertices() const override{
+    std::vector<vec3> get_vertices() const override
+    {
         return vertices;
     }
 
 private:
     point3 pos = vec3(0);
     std::string file_path;
-    std::vector<vec3> vertices; //original vertices
+    std::vector<vec3> vertices; // original vertices
 
     int parse_face_index(const std::string &token)
     {
@@ -202,8 +217,6 @@ private:
 
         return std::stoi(index_string);
     }
-
-    
 };
 
 #endif

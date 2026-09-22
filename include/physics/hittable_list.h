@@ -26,7 +26,7 @@ public:
         cur_id++;
     }
 
-    bool hit(const ray &r, interval ray_t, phy_hit_record &rec) const override
+    bool hit(const ray &r, interval ray_t, phy_hit_record &rec) override
     {
         phy_hit_record temp_rec;
         bool hit_anything = false;

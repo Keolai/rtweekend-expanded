@@ -23,7 +23,7 @@ public:
         next_state.velocity = velocity;
     }
 
-    bool hit(const ray &r, interval ray_t, phy_hit_record &rec) const override
+    bool hit(const ray &r, interval ray_t, phy_hit_record &rec) override
     {
         vec3 next_center = next_state.position;
         vec3 oc = next_center - r.origin();
@@ -66,7 +66,7 @@ public:
             T = vec3(1, 0, 0);
         }
 
-        rec.hit_object = this;
+        rec.hit_object = shared_from_this();
         // printf("discriminant: %f\n", discriminant);
         // printf("rec.t: %f\n", rec.t);
 
