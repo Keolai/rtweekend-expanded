@@ -95,6 +95,12 @@ public:
         std::vector<vec3> tmp;
         return tmp;
     }
+
+    void position(vec3 &pos) override {
+        return;
+    }
+
+    
 };
 
 #endif

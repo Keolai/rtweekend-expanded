@@ -10,6 +10,7 @@
 
 #include <map>           // Required for std::map
 #include <unordered_map> // Required for std::unordered_map
+#include <chrono>
 
 #define RESTING_THRESHOLD 0.4
 #define MS_PER_SEC 1000
@@ -26,6 +27,7 @@ public:
 
     int step(double dt) // dt should be ms;
     {
+        auto start = std::chrono::high_resolution_clock::now();
         world_bvh = make_shared<phy_bvh_node>(
             world.objects,
             0,
@@ -87,10 +89,11 @@ public:
                     auto closest_so_far = length + cur_object->hit_adjuster();
                     // for (int j = 0; j < *world_bvh.size(); j++)
                     // {
-                        if(world_bvh->hit(r,interval(0.001, closest_so_far), temp_rec)){
-                        auto test_object = temp_rec.hit_object; //just assign whatever was hit to test
-                        //phy_hittable* test_object = rec.hit_object;
-                        // test_object_is_static = test_object->is_static;
+                    if (world_bvh->hit(r, interval(0.001, closest_so_far), temp_rec))
+                    {
+                        auto test_object = temp_rec.hit_object; // just assign whatever was hit to test
+                        // phy_hittable* test_object = rec.hit_object;
+                        //  test_object_is_static = test_object->is_static;
                         if (test_object && test_object->id != cur_object->id)
                         {
                             auto test_sphere = std::static_pointer_cast<phy_sphere>(test_object);
@@ -157,7 +160,7 @@ public:
                                 }
                             }
                         }
-                    //}
+                        //}
                     }
                     double t_fraction = (length > 1e-9) ? (closest_so_far / length) : 0.0;
                     double remaining_dt = dt * (1.0 - t_fraction);
@@ -181,6 +184,10 @@ public:
                 } // end of vertex loop
             }
         }
+        auto stop = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
+            stop - start);
+        std::cout << duration.count()  << " ms\n";
         cur_step++;
         return 0;
     }

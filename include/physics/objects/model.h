@@ -4,6 +4,7 @@
 #include "tri.h"
 
 #include "../hittable.h"
+#include "../utilities/phy_bvh.h"
 
 struct phy_face_vertex
 {
@@ -14,13 +15,13 @@ struct phy_face_vertex
 class model : public phy_hittable
 {
 public:
-    std::vector<std::shared_ptr<phy_tri>> triangles;
+    std::vector<std::shared_ptr<phy_hittable>> triangles;
 
     int model_id = -1;
 
     model(const std::string &file_path) : file_path(file_path) { load_model(); }
     model(int id) : model_id(id) {}
-    model(std::vector<std::shared_ptr<phy_tri>> &tris, int id) : model_id(id) { triangles = tris; }
+    model(std::vector<std::shared_ptr<phy_hittable>> &tris, int id) : model_id(id) { triangles = tris; }
 
     void add_tri(vec3 v1, vec3 v2, vec3 v3)
     {
@@ -30,24 +31,15 @@ public:
 
     bool hit(const ray &r, interval ray_t, phy_hit_record &rec) override
     {
-        bool hit_anything = false;
-        for (int i = 0; i < triangles.size(); i++)
+        if (model_node) //in model bvh reduces up rendering by about 40% with simple models
         {
-            phy_hit_record temp_rec;
-            auto current_tri = triangles[i];
-            std::shared_ptr<phy_tri> tri_hit; // maybe need to store idk
-
-            auto closest_so_far = ray_t.max;
-            if (current_tri->hit(r, interval(0.001, closest_so_far), temp_rec)) // ray hit something
-            {
-                hit_anything = true;
-                closest_so_far = temp_rec.t;
-                rec = temp_rec;
-                tri_hit = current_tri;
-                rec.hit_object = shared_from_this();
-            }
+            return model_node->hit(r, ray_t, rec);
+        } else {
+            create_bvh();
+            return model_node->hit(r, ray_t, rec);
         }
-        return hit_anything;
+        return false;
+
     }
 
     bool load_model()
@@ -151,11 +143,17 @@ public:
                 box,
                 triangles[i]->bounding_box());
         }
-
         return box;
     }
 
-    void position(vec3 &newPos)
+    void create_bvh(){
+         model_node = std::make_shared<phy_bvh_node>(
+            triangles,
+            0,
+            triangles.size());
+    }
+
+    void position(vec3 &newPos) override
     {
         pos = newPos;
         for (int i = 0; i < triangles.size(); i++)
@@ -205,6 +203,7 @@ private:
     point3 pos = vec3(0);
     std::string file_path;
     std::vector<vec3> vertices; // original vertices
+    std::shared_ptr<phy_bvh_node>  model_node;
 
     int parse_face_index(const std::string &token)
     {

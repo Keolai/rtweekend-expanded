@@ -144,6 +144,10 @@ public:
         assert(false && "phy_bvh_node::get_vertices called; use rec.hit_object instead");
         return {};
     }
+
+     void position(vec3 &pos) override {
+        return;
+    }
  
 private:
     std::shared_ptr<phy_hittable> left;

@@ -266,7 +266,7 @@ int main()
     cam.lookat = point3(0, 0, -1);
     cam.vup = vec3(0, 1, 0);
     cam.ambient = color(0.00);
-    cam.image_resolution = 4;
+    cam.image_resolution = 1;
     cam.shadow_samples = 1; // 0 == no shadows
 
     // cam.add_light(std::make_shared<spot_light>(point3(1,3,5), color(0.7,0.7,0.4), 150, 0.22,0.3,vec3(0,0,-2)));
@@ -278,7 +278,7 @@ int main()
 
     // buttons
     win.create_button(5, 50, 50, 20, "Render", [&]()
-                      { render(cam, world, win, 1, 3, 4); });
+                      { render(cam, *world_bvh, win, 1, 3, 4); });
     // win.create_button(5, 75, 75, 20, "HD Render", [&]()
     //                   { render(cam, world, win, 25,8,1); });
     // win.create_button(5, cam.get_height() - 25, 50, 20, "Save!", [&]()
@@ -298,8 +298,9 @@ int main()
         {
             // printf("running!\n");
             sim.update_render();
+            world_bvh->rebuild(world.objects); //ehhh
             win.update();
-            cam.render(world, color_buffer, win); // TODO: FIX THIS
+            cam.render(*world_bvh, color_buffer, win); // TODO: FIX THIS
         }
 
         running = false;
@@ -313,8 +314,9 @@ int main()
         {
             // printf("running!\n");
             sim.step(SIM_RATE_MS);
+            world_bvh->rebuild(world.objects);
             sim.update_render();
-            cam.render(world, color_buffer, win);
+            cam.render(*world_bvh, color_buffer, win);
             write_to_file(cam.image_width, cam.get_height(), sim.get_step());   
             cur_step++;
         }

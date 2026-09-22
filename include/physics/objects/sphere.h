@@ -82,7 +82,7 @@ public:
             center + rvec);
     }
 
-    void position(vec3 &newPos)
+    void position(vec3 &newPos) override
     {
         center = newPos;
     }

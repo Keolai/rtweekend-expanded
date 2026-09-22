@@ -40,6 +40,8 @@ public:
     virtual bool is_inside(const ray &r) const = 0;
     virtual vec3 closest_point_on_surface(const vec3 &pos) const = 0;
     virtual std::vector<vec3> get_vertices() const = 0;
+    virtual void position(vec3 &pos) = 0;
+
 
     state current_state = state();
     state next_state = state();
