@@ -6,6 +6,8 @@
 #include "objects/sphere.h"
 #include "objects/model.h"
 #include "objects/tri.h"
+#include "objects/particle.h"
+
 #include "utilities/phy_bvh.h"
 
 #include <map>           // Required for std::map
@@ -22,13 +24,14 @@ public:
     int cur_step = 0;
     phy_hittable_list world;
     std::shared_ptr<phy_bvh_node> world_bvh;
+    std::vector<particle_emitter> emitters;
 
     std::vector<shared_ptr<force>> forces;
 
     int step(double dt) // dt should be ms;
     {
         auto start = std::chrono::high_resolution_clock::now();
-        world_bvh = make_shared<phy_bvh_node>(
+        world_bvh = make_shared<phy_bvh_node>( //is this slow?
             world.objects,
             0,
             world.objects.size());
@@ -187,9 +190,16 @@ public:
         auto stop = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
             stop - start);
-        std::cout << duration.count()  << " ms\n";
+        //std::cout << duration.count()  << " ms\n";
         cur_step++;
         return 0;
+    }
+
+    void particle_step(double dt){ //TODO:
+        for (int i = 0; i < emitters.size(); i++){
+            particle_emitter &cur_emitter = emitters[i];
+            cur_emitter.step(dt);
+        }
     }
 
     void
@@ -288,7 +298,7 @@ private:
 
     void sphere_to_sphere_collision(phy_sphere &cur_sphere, phy_sphere &test_sphere, double t_hit, double dt)
     {
-        double dt_frac = t_hit * dt / MS_PER_SEC; // scaled time-into-frame, in seconds
+        double dt_frac = t_hit * dt / MS_PER_SEC; // scaled time-into-frame
 
         vec3 p1_at_hit = cur_sphere.current_state.position + dt_frac * cur_sphere.current_state.velocity;
         vec3 p2_at_hit = test_sphere.current_state.position + dt_frac * test_sphere.current_state.velocity;
@@ -296,7 +306,7 @@ private:
         vec3 collision_normal = unit_vector(p2_at_hit - p1_at_hit); // points from cur_sphere toward test_sphere
         vec3 contact_point = p1_at_hit + collision_normal * cur_sphere.get_radius();
 
-        // "1" = cur_sphere, "2" = test_sphere, consistently:
+        // "1" = cur_sphere, "2" = test_sphere
         double v1n_scalar = dot(cur_sphere.next_state.velocity, collision_normal);
         double v2n_scalar = dot(test_sphere.next_state.velocity, collision_normal);
         vec3 v1t = cur_sphere.next_state.velocity - v1n_scalar * collision_normal;
@@ -356,7 +366,7 @@ private:
             return true;
         }
 
-        // not moving relative to each other — can't newly collide this frame
+        // not moving relative to each other
         if (a < 1e-12)
             return false;
 
