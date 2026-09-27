@@ -191,6 +191,7 @@ public:
         auto stop = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
             stop - start);
+        particle_step(dt);
         // std::cout << duration.count()  << " ms\n";
         cur_step++;
         return 0;
@@ -210,6 +211,9 @@ public:
                     vec3 new_acceleration = get_net_force(cur_particle.position, cur_particle.velocity, PARTICLE_MASS) / PARTICLE_MASS;
                     vec3 new_velocity = cur_particle.velocity + new_acceleration * (dt / MS_PER_SEC);
                     vec3 new_position = cur_particle.position + new_velocity * (dt / MS_PER_SEC);
+                    // std::cout << "pos: (" << cur_particle.position.x() << ", "
+                    //           << cur_particle.position.y() << ", "
+                    //           << cur_particle.position.z() << ")" << std::endl;
 
                     vec3 direction = new_position - cur_particle.position;
                     double length = direction.length();
@@ -220,7 +224,7 @@ public:
                     if (world_bvh->hit(r, interval(0.001, closest_so_far), rec))
                     {
                         // resolve collision
-                        double restitution = rec.hit_object->restitution; //needed?
+                        double restitution = rec.hit_object->restitution; // needed?
                         vec3 n = rec.normal;
                         double v_dot_n = dot(new_velocity, n);
 

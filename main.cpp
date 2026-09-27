@@ -9,6 +9,7 @@
 #include "include/mesh.h"
 #include "include/bvh.h"
 #include "include/window.h"
+#include "include/particle_container.h"
 
 #include "include/physics_layer.h"
 
@@ -181,58 +182,11 @@ int main()
 
     physics_layer sim;
 
-    sim.add_force(vec3(0, -1, 0), 5.0); // gravity
-    sim.add_wind_resistance(0.1, 1);    // wind resistance
-    // sim.add_point_force(vec3(0,0,0),2);
-
-    // START OF BASIC DEMO
-    // int sphere_physics_1 = sim.add_sphere_to_world(vec3(0, 2.5, 0), vec3(0, 4, 0), 0.3);
-    // auto mySphere1 = std::make_shared<sphere>(point3(0, 2.5, 0), 0.3, mat);
-    // world.add(mySphere1);
-
-    // int sphere_physics_2 = sim.add_sphere_to_world(vec3(1.2, 2.5, 0), vec3(4, 0, 0), 0.3);
-    // auto mySphere2 = std::make_shared<sphere>(point3(1.2, 2.5, 0), 0.3, mat);
-    // world.add(mySphere2);
-
-    // int sphere_physics_3 = sim.add_sphere_to_world(vec3(-1.2, 2.5, 0), vec3(-4, 0, 0), 0.3);
-    // auto mySphere3 = std::make_shared<sphere>(point3(-1.2, 2.5, 0), 0.3, mat);
-    // world.add(mySphere3);
-
-    // int sphere_physics_4 = sim.add_sphere_to_world(vec3(0, 2.5, -1.2), vec3(0, 0, -4), 0.3);
-    // auto mySphere4 = std::make_shared<sphere>(point3(0, 2.5, -1.2), 0.3, mat);
-    // world.add(mySphere4);
-
-    // int sphere_physics_5 = sim.add_sphere_to_world(vec3(0, 2.5, 1.2), vec3(0, 0, 4), 0.3);
-    // auto mySphere5 = std::make_shared<sphere>(point3(0, 2.5, 1.2), 0.3, mat);
-    // world.add(mySphere5);
-
-    // int model = sim.add_mesh_to_world("models/closed_cube.obj", true);
-    // auto my_model = std::make_shared<mesh>("models/open_cube.obj", cube_mat, world);
-
-    // sim.connect_objects(mySphere1->id, sphere_physics_1);
-    // sim.connect_objects(mySphere2->id, sphere_physics_2);
-    // sim.connect_objects(mySphere3->id, sphere_physics_3);
-    // sim.connect_objects(mySphere4->id, sphere_physics_4);
-    // sim.connect_objects(mySphere5->id, sphere_physics_5);
-    // sim.connect_objects(my_model->id, model);
-    //END OF BASIC DEMO
-
-    // START OF TWO BALLS HITTING DEMO
-    int model = sim.add_mesh_to_world("models/closed_cube.obj",true);
-    auto my_model = std::make_shared<mesh>("models/open_cube.obj",cube_mat,world);
-
-    int sphere_physics_id = sim.add_sphere_to_world(vec3(-1,2,0),vec3(2,0,0),0.5);
-    auto mySphere1 = std::make_shared<sphere>(point3(-1,2,0), 0.5, mat);
-    world.add(mySphere1);
-
-    int sphere_physics_id2 = sim.add_sphere_to_world(vec3(1,2,0),vec3(-2,0,0),0.5);
-    auto mySphere2 = std::make_shared<sphere>(point3(1,2,0), 0.5, mat);
-    world.add(mySphere2);
-
-    sim.connect_objects(mySphere1->id,sphere_physics_id);
-    sim.connect_objects(mySphere2->id,sphere_physics_id2);
-    sim.connect_objects(my_model->id, model);
-    // END OF TWO BALLS HITTING DEMO
+    //sim.add_force(vec3(0, -1, 0), 5.0); // gravity
+    
+    particle_emitter& emitter = sim.add_particle_emitter(vec3(0),vec3(1,0,-1),1,1,10);
+    auto vis_emitter = std::make_shared<particle_container>(emitter.particles,mat, 0.5);
+    world.add(vis_emitter);
 
     //CUBE FALLING DEMO
     // sim.add_force(vec3(0,10,0),1);
@@ -262,7 +216,7 @@ int main()
     cam.max_depth = 25;
 
     cam.vfov = 70;
-    cam.lookfrom = point3(0, 3, 5); // 0 5 10
+    cam.lookfrom = point3(0, 3, 10); // 0 5 10
     cam.lookat = point3(0, 0, -1);
     cam.vup = vec3(0, 1, 0);
     cam.ambient = color(0.00);
