@@ -76,6 +76,11 @@ public:
         simulation.forces.push_back(std::make_shared<wind_resistance>(0.47, pi * 1.0 * 1.0));
     }
 
+    void add_particle_emitter(vec3 &position, vec3 &direction, double spread, double speed, int flow){
+        particle_emitter new_emitter = particle_emitter(position, direction, spread, speed, 10, flow);
+        simulation.emitters.push_back(new_emitter);
+    }
+
     void connect_objects(int renderId, int physicsId){
         idMap.insert({renderId,physicsId});
         simulation.add_objects_to_map();

@@ -15,6 +15,7 @@
 #include <chrono>
 
 #define RESTING_THRESHOLD 0.4
+#define PARTICLE_MASS 0.1
 #define MS_PER_SEC 1000
 
 class sim
@@ -31,7 +32,7 @@ public:
     int step(double dt) // dt should be ms;
     {
         auto start = std::chrono::high_resolution_clock::now();
-        world_bvh = make_shared<phy_bvh_node>( //is this slow?
+        world_bvh = make_shared<phy_bvh_node>( // is this slow?
             world.objects,
             0,
             world.objects.size());
@@ -190,15 +191,52 @@ public:
         auto stop = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
             stop - start);
-        //std::cout << duration.count()  << " ms\n";
+        // std::cout << duration.count()  << " ms\n";
         cur_step++;
         return 0;
     }
 
-    void particle_step(double dt){ //TODO:
-        for (int i = 0; i < emitters.size(); i++){
+    void particle_step(double dt)
+    { // TODO:
+        for (int i = 0; i < emitters.size(); i++)
+        {
             particle_emitter &cur_emitter = emitters[i];
             cur_emitter.step(dt);
+            for (int j = 0; j < cur_emitter.particles.size(); j++)
+            {
+                particle &cur_particle = cur_emitter.particles[j];
+                if (cur_particle.alive) // skip dead particle
+                {
+                    vec3 new_acceleration = get_net_force(cur_particle.position, cur_particle.velocity, PARTICLE_MASS) / PARTICLE_MASS;
+                    vec3 new_velocity = cur_particle.velocity + new_acceleration * (dt / MS_PER_SEC);
+                    vec3 new_position = cur_particle.position + new_velocity * (dt / MS_PER_SEC);
+
+                    vec3 direction = new_position - cur_particle.position;
+                    double length = direction.length();
+                    ray r = ray(cur_particle.position, unit_vector(direction));
+                    double closest_so_far = length;
+                    phy_hit_record rec;
+
+                    if (world_bvh->hit(r, interval(0.001, closest_so_far), rec))
+                    {
+                        // resolve collision
+                        double restitution = rec.hit_object->restitution; //needed?
+                        vec3 n = rec.normal;
+                        double v_dot_n = dot(new_velocity, n);
+
+                        // reflect
+                        vec3 reflected_velocity = new_velocity - n * ((1.0 + restitution) * v_dot_n);
+
+                        cur_particle.position = rec.p + n * 0.001;
+                        cur_particle.velocity = reflected_velocity;
+                    }
+                    else
+                    {
+                        cur_particle.position = new_position;
+                        cur_particle.velocity = new_velocity;
+                    }
+                }
+            }
         }
     }
 
