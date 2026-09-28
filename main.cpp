@@ -184,20 +184,21 @@ int main()
 
     //sim.add_force(vec3(0, -1, 0), 5.0); // gravity
     
-    particle_emitter& emitter = sim.add_particle_emitter(vec3(0),vec3(1,0,-1),1,1,10);
+    //const vec3 &position, const vec3 &direction, double spread, double speed, double flow)
+    particle_emitter& emitter = sim.add_particle_emitter(vec3(4,0,0),vec3(-1,0,0),0.5,1,1);
     auto vis_emitter = std::make_shared<particle_container>(emitter.particles,mat, 0.5);
     world.add(vis_emitter);
 
     //CUBE FALLING DEMO
     // sim.add_force(vec3(0,10,0),1);
-    // int model = sim.add_mesh_to_world("models/closed_cube.obj",true);
-    // auto my_model = std::make_shared<mesh>("models/open_cube.obj",cube_mat,world);
+    int model = sim.add_mesh_to_world("models/closed_cube.obj",true);
+    auto my_model = std::make_shared<mesh>("models/open_cube.obj",cube_mat,world);
 
-    // int cube_physics_id = sim.add_mesh_to_world("models/cube.obj",false);
-    // auto mySphere1 = std::make_shared<mesh>("models/cube.obj", mat, world);
+    // int cube_physics_id = sim.add_mesh_to_world("models/cube.obj",true);
+    // auto mySphere1 = std::make_shared<mesh>("models/cube.obj", met, world);
 
     // sim.connect_objects(mySphere1->id,cube_physics_id);
-    // sim.connect_objects(my_model->id, model);
+    sim.connect_objects(my_model->id, model);
     //END OF CUBE FALLING
 
     // sim.connect_objects(mySphere2->id,sphere_physics_id_rigid);
@@ -220,7 +221,7 @@ int main()
     cam.lookat = point3(0, 0, -1);
     cam.vup = vec3(0, 1, 0);
     cam.ambient = color(0.00);
-    cam.image_resolution = 1;
+    cam.image_resolution = 2;
     cam.shadow_samples = 1; // 0 == no shadows
 
     // cam.add_light(std::make_shared<spot_light>(point3(1,3,5), color(0.7,0.7,0.4), 150, 0.22,0.3,vec3(0,0,-2)));

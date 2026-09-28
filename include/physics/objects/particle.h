@@ -5,7 +5,7 @@
 #include <random>
 #include <vector>
 
-#define DEFAULT_MAX 100
+#define DEFAULT_MAX 500
 
 struct particle
 {
@@ -21,11 +21,11 @@ class particle_emitter
 public:
     std::vector<particle> particles;
 
-    particle_emitter(vec3 position, vec3 direction, double spread, double speed, double lifespan, int flow, int max) : position(position),
-                                                                                                                       direction(direction), spread(spread), speed(speed), lifespan(lifespan), flow(flow), max(max) { particles.resize(max); }
+    particle_emitter(vec3 position, vec3 direction, double spread, double speed, double lifespan, double flow, int max) : position(position),
+                                                                                                                          direction(direction), spread(spread), speed(speed), lifespan(lifespan), flow(flow), max(max) { particles.resize(max); }
 
-    particle_emitter(vec3 position, vec3 direction, double spread, double speed, double lifespan, int flow) : position(position),
-                                                                                                              direction(direction), spread(spread), speed(speed), lifespan(lifespan), flow(flow), max(DEFAULT_MAX) { particles.resize(max); }
+    particle_emitter(vec3 position, vec3 direction, double spread, double speed, double lifespan, double flow) : position(position),
+                                                                                                                 direction(direction), spread(spread), speed(speed), lifespan(lifespan), flow(flow), max(DEFAULT_MAX) { particles.resize(max); }
     void spawn(particle &p)
     {
         p.position = position;
@@ -54,29 +54,36 @@ public:
         p.alive = true;
     }
 
-    int get_max(){return max;}
+    int get_max() { return max; }
 
     void step(double dt)
     {
-        int spawned = 0;
+        accumulator += flow * (dt / 1000);
+        int to_spawn = static_cast<int>(accumulator);
         for (int i = 0; i < particles.size(); i++)
         { // update ages first
             particle &cur_particle = particles[i];
             if (cur_particle.alive)
             {
                 cur_particle.age += dt / 1000; // ms per sec
-                if (cur_particle.age > lifespan) {
+                if (cur_particle.age > lifespan)
+                {
                     cur_particle.age = 0.0;     // reset
                     cur_particle.alive = false; // KILL IT!!!
                 }
-            } else { //we can use a dead particle to spawn a new one in its place
-                if (spawned <= flow) {
-                    spawned++;
+            }
+            else
+            { // we can use a dead particle to spawn a new one in its place
+                if (to_spawn > 0)
+                {
                     spawn(cur_particle);
+                    to_spawn--;
+                    accumulator -= 1.0;
                 }
             }
-            //now we can check collisions
+            // now we can check collisions
         }
+          if (accumulator > 1.0) accumulator = 1.0;
     }
 
 private:
@@ -85,7 +92,8 @@ private:
     double speed;
     double lifespan;
     double spread; // theta
-    int flow;      // number of particles to come out per tick
+    double flow;   // number of particles to come out per second
+    double accumulator;
     int max;
 };
 

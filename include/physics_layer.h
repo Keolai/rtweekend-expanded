@@ -76,8 +76,8 @@ public:
         simulation.forces.push_back(std::make_shared<wind_resistance>(0.47, pi * 1.0 * 1.0));
     }
 
-    particle_emitter& add_particle_emitter(const vec3 &position, const vec3 &direction, double spread, double speed, int flow){
-        particle_emitter new_emitter = particle_emitter(position, direction, spread, speed, 5, flow);
+    particle_emitter& add_particle_emitter(const vec3 &position, const vec3 &direction, double spread, double speed, double flow){
+        particle_emitter new_emitter = particle_emitter(position, direction, spread, speed, 20, flow);
         simulation.emitters.emplace_back(new_emitter);
         return simulation.emitters.back();
     }
