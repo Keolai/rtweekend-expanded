@@ -192,13 +192,13 @@ public:
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
             stop - start);
         particle_step(dt);
-        // std::cout << duration.count()  << " ms\n";
+        //std::cout << duration.count()  << " ms\n";
         cur_step++;
         return 0;
     }
 
     void particle_step(double dt)
-    { // TODO:
+    { //particles are a lot less expensive than real objects
         for (int i = 0; i < emitters.size(); i++)
         {
             particle_emitter &cur_emitter = emitters[i];
@@ -216,7 +216,7 @@ public:
                     //           << cur_particle.position.z() << ")" << std::endl;
 
                     vec3 direction = new_position - cur_particle.position;
-                    double length = direction.length();
+                    double length = direction.length() + 0.01; //need to add extra to prevent points from going thru walls
                     ray r = ray(cur_particle.position, unit_vector(direction));
                     double closest_so_far = length;
                     phy_hit_record rec;
@@ -231,7 +231,7 @@ public:
                         // reflect
                         vec3 reflected_velocity = new_velocity - n * ((1.0 + restitution) * v_dot_n);
 
-                        cur_particle.position = rec.p + n * 0.001;
+                        cur_particle.position = rec.p + (n * 0.01); //maybe change
                         cur_particle.velocity = reflected_velocity;
                     }
                     else

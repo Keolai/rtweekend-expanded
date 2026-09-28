@@ -10,6 +10,7 @@
 #include "include/bvh.h"
 #include "include/window.h"
 #include "include/particle_container.h"
+#include "include/metaball.h"
 
 #include "include/physics_layer.h"
 
@@ -185,8 +186,8 @@ int main()
     //sim.add_force(vec3(0, -1, 0), 5.0); // gravity
     
     //const vec3 &position, const vec3 &direction, double spread, double speed, double flow)
-    particle_emitter& emitter = sim.add_particle_emitter(vec3(4,0,0),vec3(-1,0,0),0.5,1,1);
-    auto vis_emitter = std::make_shared<particle_container>(emitter.particles,mat, 0.5);
+    particle_emitter& emitter = sim.add_particle_emitter(vec3(4,0,0),vec3(-1,0,0),0.5,1,2);
+    auto vis_emitter = std::make_shared<metaball>(emitter.particles,mat, 0.5);
     world.add(vis_emitter);
 
     //CUBE FALLING DEMO
