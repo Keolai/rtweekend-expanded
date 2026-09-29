@@ -62,6 +62,20 @@ public:
         return;
     }
 
+    //vec3 position, vec3 axis, double field_strength
+    void add_vortex_force(const vec3 &pos, const vec3 &axis, double strength){
+        auto new_force = std::make_shared<vortex_force>(pos,axis,strength);
+        simulation.forces.push_back(new_force);
+        return;
+    }
+
+    // range_force(vec3 source, double target_distance, double strength)
+    void add_range_force(const vec3 &pos, double distance, double strength){
+        auto new_force = std::make_shared<range_force>(pos,distance,strength);
+        simulation.forces.push_back(new_force);
+        return;
+    }
+
     void add_point_force(const vec3 &pos, double strength){
         auto new_force = std::make_shared<point_force>();
 

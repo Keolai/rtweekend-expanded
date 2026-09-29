@@ -22,10 +22,10 @@
 #include <chrono>
 #include <mutex>
 
-#define SIM_RATE_MS 2 //interval
+#define SIM_RATE_MS 33 //interval
 
-#define RECORDING false
-#define MAX_RECORDING_STEPS 80
+#define RECORDING true
+#define MAX_RECORDING_STEPS 300
 
 std::atomic<bool> running{true};
 std::mutex state_mutex;
@@ -175,31 +175,37 @@ int main()
     //* DEFINE WORLD HERE *//
     hittable_list world;
     auto met = make_shared<metal>(color(0.8, 0.8, 0.8), 0.1);      // teapot material
-    auto mat = make_shared<lambertian>(color(0.8, 0.8, 0.0));      // world material
+    auto mat = make_shared<lambertian>(color(0.3, 0.1, 0.1));      // world material
     auto cube_mat = make_shared<lambertian>(color(0.5, 0.5, 0.5)); // world material
     auto em = make_shared<emmissive>(color(0.5));
     auto tex_mat = make_shared<metal>("models/textures/checkered.ppm", 0.1);
-    // mesh teapot_Model = mesh("models/solid_teapot.obj", tex_mat, world); this is to check stuff
 
     physics_layer sim;
 
-    //sim.add_force(vec3(0, -1, 0), 5.0); // gravity
+    sim.add_force(vec3(0, -1, 0), 5.0); // gravity
+
+    // sim.add_vortex_force(vec3(0),vec3(0,1,0),5);
+    // sim.add_range_force(vec3(0),2,5);
+
+    mesh teapot_Model = mesh("models/solid_teapot.obj", tex_mat, world); //this is to check stuff
+    int tea_physics = sim.add_mesh_to_world("models/solid_teapot.obj",true);
+
     
-    //const vec3 &position, const vec3 &direction, double spread, double speed, double flow)
-    particle_emitter& emitter = sim.add_particle_emitter(vec3(4,0,0),vec3(-1,0,0),0.5,1,2);
-    auto vis_emitter = std::make_shared<metaball>(emitter.particles,mat, 0.5);
+    //PARAMETERS=(const vec3 &position, const vec3 &direction, double spread, double speed, double flow)
+    particle_emitter& emitter = sim.add_particle_emitter(vec3(2,4,0),vec3(-1,-0.5,0),0.4,2,10);
+    auto vis_emitter = std::make_shared<metaball>(emitter.particles,mat, 0.3);
     world.add(vis_emitter);
 
     //CUBE FALLING DEMO
     // sim.add_force(vec3(0,10,0),1);
-    int model = sim.add_mesh_to_world("models/closed_cube.obj",true);
-    auto my_model = std::make_shared<mesh>("models/open_cube.obj",cube_mat,world);
+    // int model = sim.add_mesh_to_world("models/closed_cube.obj",true);
+    // auto my_model = std::make_shared<mesh>("models/open_cube.obj",cube_mat,world);
 
     // int cube_physics_id = sim.add_mesh_to_world("models/cube.obj",true);
     // auto mySphere1 = std::make_shared<mesh>("models/cube.obj", met, world);
 
     // sim.connect_objects(mySphere1->id,cube_physics_id);
-    sim.connect_objects(my_model->id, model);
+    //sim.connect_objects(my_model->id, model);
     //END OF CUBE FALLING
 
     // sim.connect_objects(mySphere2->id,sphere_physics_id_rigid);
@@ -218,11 +224,11 @@ int main()
     cam.max_depth = 25;
 
     cam.vfov = 70;
-    cam.lookfrom = point3(0, 3, 10); // 0 5 10
+    cam.lookfrom = point3(0, 4, 5); // 0 5 10
     cam.lookat = point3(0, 0, -1);
     cam.vup = vec3(0, 1, 0);
     cam.ambient = color(0.00);
-    cam.image_resolution = 2;
+    cam.image_resolution = 4;
     cam.shadow_samples = 1; // 0 == no shadows
 
     // cam.add_light(std::make_shared<spot_light>(point3(1,3,5), color(0.7,0.7,0.4), 150, 0.22,0.3,vec3(0,0,-2)));
