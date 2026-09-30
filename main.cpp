@@ -24,8 +24,8 @@
 
 #define SIM_RATE_MS 33 //interval
 
-#define RECORDING true
-#define MAX_RECORDING_STEPS 350
+#define RECORDING false
+#define MAX_RECORDING_STEPS 300
 
 std::atomic<bool> running{true};
 std::mutex state_mutex;
@@ -176,6 +176,7 @@ int main()
     hittable_list world;
     auto met = make_shared<metal>(color(0.8, 0.8, 0.8), 0.1);      // teapot material
     auto mat = make_shared<lambertian>(color(0.5, 0.5, 0.0));      // world material
+    auto second_mat = make_shared<lambertian>(color(0.7, 0.0, 0.0)); 
     auto cube_mat = make_shared<lambertian>(color(0.5, 0.5, 0.5)); // world material
     auto em = make_shared<emmissive>(color(0.5));
     auto tex_mat = make_shared<metal>("models/textures/checkered.ppm", 0.1);
@@ -184,23 +185,34 @@ int main()
 
     physics_layer sim;
 
-    // sim.add_force(vec3(0, -1, 0), 5.0); // gravity
+    sim.add_force(vec3(0, -1, 0), 5.0); // gravity
 
-    sim.add_vortex_force(vec3(0),vec3(0,1,0),5);
-    sim.add_range_force(vec3(0),2,6);
+    // sim.add_vortex_force(vec3(0),vec3(0,1,0),5);
+    // sim.add_range_force(vec3(0),2,6);
 
     // mesh teapot_Model = mesh("models/solid_teapot.obj", tex_mat, world); //this is to check stuff
     // int tea_physics = sim.add_mesh_to_world("models/solid_teapot.obj",true);
 
-    auto my_sphere = std::make_shared<sphere>(vec3(0),1,smile_mat);
-    int sphere_physics = sim.add_sphere_to_world(vec3(0),1,true);
-    sim.connect_objects(my_sphere->id,sphere_physics);
-    world.add(my_sphere);
+    //smiles
+    // auto my_sphere = std::make_shared<sphere>(vec3(0),1,smile_mat);
+    // int sphere_physics = sim.add_sphere_to_world(vec3(0),1,true);
+    // sim.connect_objects(my_sphere->id,sphere_physics);
+    // world.add(my_sphere);
+
+    //bowl
+    auto bowl_Model = std::make_shared<mesh>("models/bowl.obj", tex_mat, world); //this is to check stuff
+    int bowl_physics = sim.add_mesh_to_world("models/bowl.obj",true);
+    sim.connect_objects(bowl_Model->id,bowl_physics);
+
     
     //PARAMETERS=(const vec3 &position, const vec3 &direction, double spread, double speed, double flow)
-    particle_emitter& emitter = sim.add_particle_emitter(vec3(4,0,4),vec3(-1,-1,0),0.4,2,10);
-    auto vis_emitter = std::make_shared<metaball>(emitter.particles,mat, 0.3);
+    particle_emitter& emitter = sim.add_particle_emitter(vec3(0,4,0),vec3(0,-1,0),1,1,50);
+    auto vis_emitter = std::make_shared<metaball>(emitter.particles,smile_mat, 0.2);
     world.add(vis_emitter);
+
+    // particle_emitter& sec_emitter = sim.add_particle_emitter(vec3(0.5,4,0),vec3(0,-1,0),1,1,20);
+    // auto sec_vis_emitter = std::make_shared<metaball>(sec_emitter.particles,second_mat, 0.2);
+    // world.add(sec_vis_emitter);
 
     //CUBE FALLING DEMO
     // sim.add_force(vec3(0,10,0),1);
@@ -230,7 +242,7 @@ int main()
     cam.max_depth = 25;
 
     cam.vfov = 70;
-    cam.lookfrom = point3(7, 2, 0); // 0 5 10 default
+    cam.lookfrom = point3(3, 3, 0); // 0 5 10 default
     cam.lookat = point3(0, 0, 0);
     cam.vup = vec3(0, 1, 0);
     cam.ambient = color(0.1);
@@ -277,6 +289,7 @@ int main()
     else
     {
         cam.image_resolution = 1;
+        cam.shadow_samples = 5;
         int cur_step = 0;
         while (!win.poll_for_event() && cur_step <= MAX_RECORDING_STEPS)
         {

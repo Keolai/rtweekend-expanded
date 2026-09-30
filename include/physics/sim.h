@@ -18,10 +18,12 @@
 #define PARTICLE_MASS 0.1
 #define MS_PER_SEC 1000
 
+#define MAX_EMITTERS 5
+
 class sim
 {
 public:
-    sim() {}
+    sim() {emitters.reserve(MAX_EMITTERS);}
     int cur_step = 0;
     phy_hittable_list world;
     std::shared_ptr<phy_bvh_node> world_bvh;
