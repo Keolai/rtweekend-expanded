@@ -5,7 +5,7 @@
 #include <random>
 #include <vector>
 
-#define DEFAULT_MAX 500
+#define DEFAULT_MAX 1000
 
 struct particle
 {

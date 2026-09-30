@@ -13,9 +13,7 @@ for file in out[0-9]*[0-9]*[0-9]*[0-9]*.ppm; do
     filename=$(basename "$file")
     output="$OUTPUT_DIR/${filename%.ppm}.png"
 
-    convert "$file" "$output"
-
-     if magick "$file" "$output"; then
+     if convert "$file" "$output"; then
         rm "$file"
     else
         echo "ERROR: Failed to convert $file — keeping original"
