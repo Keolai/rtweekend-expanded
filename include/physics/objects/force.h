@@ -83,7 +83,7 @@ private:
     vec3 position;
     vec3 axis;
     double field_strength; // controls spin direction
-    double falloff_power;  // 0 = uniform swirl strength regardless of distance, 1+ = weaker further out
+    double falloff_power;  
 };
 
 class range_force : public force
