@@ -24,8 +24,8 @@
 
 #define SIM_RATE_MS 33 //interval
 
-#define RECORDING false
-#define MAX_RECORDING_STEPS 300
+#define RECORDING true
+#define MAX_RECORDING_STEPS 500
 
 std::atomic<bool> running{true};
 std::mutex state_mutex;
@@ -185,28 +185,28 @@ int main()
 
     physics_layer sim;
 
-    sim.add_force(vec3(0, -1, 0), 5.0); // gravity
+    //sim.add_force(vec3(0, 1, 0), 5.0); // gravity
 
-    // sim.add_vortex_force(vec3(0),vec3(0,1,0),5);
-    // sim.add_range_force(vec3(0),2,6);
+    sim.add_vortex_force(vec3(0),vec3(0,1,0),5);
+    sim.add_range_force(vec3(0),2,6);
 
     // mesh teapot_Model = mesh("models/solid_teapot.obj", tex_mat, world); //this is to check stuff
     // int tea_physics = sim.add_mesh_to_world("models/solid_teapot.obj",true);
 
     //smiles
-    // auto my_sphere = std::make_shared<sphere>(vec3(0),1,smile_mat);
-    // int sphere_physics = sim.add_sphere_to_world(vec3(0),1,true);
-    // sim.connect_objects(my_sphere->id,sphere_physics);
-    // world.add(my_sphere);
+    auto my_sphere = std::make_shared<sphere>(vec3(0),1,smile_mat);
+    int sphere_physics = sim.add_sphere_to_world(vec3(0),1,true);
+    sim.connect_objects(my_sphere->id,sphere_physics);
+    world.add(my_sphere);
 
     //bowl
-    auto bowl_Model = std::make_shared<mesh>("models/bowl.obj", tex_mat, world); //this is to check stuff
-    int bowl_physics = sim.add_mesh_to_world("models/bowl.obj",true);
-    sim.connect_objects(bowl_Model->id,bowl_physics);
+    // auto bowl_Model = std::make_shared<mesh>("models/bowl.obj", tex_mat, world); //this is to check stuff
+    // int bowl_physics = sim.add_mesh_to_world("models/bowl.obj",true);
+    // sim.connect_objects(bowl_Model->id,bowl_physics);
 
     
     //PARAMETERS=(const vec3 &position, const vec3 &direction, double spread, double speed, double flow)
-    particle_emitter& emitter = sim.add_particle_emitter(vec3(0,4,0),vec3(0,-1,0),1,1,50);
+    particle_emitter& emitter = sim.add_particle_emitter(vec3(-4,0,3),vec3(-1,-1,0),2,1,100);
     auto vis_emitter = std::make_shared<metaball>(emitter.particles,smile_mat, 0.2);
     world.add(vis_emitter);
 
@@ -242,7 +242,7 @@ int main()
     cam.max_depth = 25;
 
     cam.vfov = 70;
-    cam.lookfrom = point3(3, 3, 0); // 0 5 10 default
+    cam.lookfrom = point3(7, 3, 1); // 0 5 10 default
     cam.lookat = point3(0, 0, 0);
     cam.vup = vec3(0, 1, 0);
     cam.ambient = color(0.1);
