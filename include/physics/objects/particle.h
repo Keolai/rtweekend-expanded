@@ -20,6 +20,7 @@ class particle_emitter
 {
 public:
     std::vector<particle> particles;
+    bool is_flock = false;
 
     particle_emitter(vec3 position, vec3 direction, double spread, double speed, double lifespan, double flow, int max) : position(position),
                                                                                                                           direction(direction), spread(spread), speed(speed), lifespan(lifespan), flow(flow), max(max) { particles.resize(max); }

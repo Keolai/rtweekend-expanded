@@ -24,7 +24,7 @@
 
 #define SIM_RATE_MS 33 //interval
 
-#define RECORDING true
+#define RECORDING false
 #define MAX_RECORDING_STEPS 500
 
 std::atomic<bool> running{true};

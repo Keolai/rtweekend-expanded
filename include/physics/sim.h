@@ -9,6 +9,7 @@
 #include "objects/particle.h"
 
 #include "utilities/phy_bvh.h"
+#include "utilities/particle_bvh.h"
 
 #include <map>           // Required for std::map
 #include <unordered_map> // Required for std::unordered_map
@@ -19,11 +20,12 @@
 #define MS_PER_SEC 1000
 
 #define MAX_EMITTERS 5
+#define NEIGHBOR_RADIUS 0.5
 
 class sim
 {
 public:
-    sim() {emitters.reserve(MAX_EMITTERS);}
+    sim() { emitters.reserve(MAX_EMITTERS); }
     int cur_step = 0;
     phy_hittable_list world;
     std::shared_ptr<phy_bvh_node> world_bvh;
@@ -194,54 +196,24 @@ public:
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
             stop - start);
         particle_step(dt);
-        //std::cout << duration.count()  << " ms\n";
+        // std::cout << duration.count()  << " ms\n";
         cur_step++;
         return 0;
     }
 
     void particle_step(double dt)
-    { //particles are a lot less expensive than real objects
+    { // particles are a lot less expensive than real objects
         for (int i = 0; i < emitters.size(); i++)
         {
             particle_emitter &cur_emitter = emitters[i];
             cur_emitter.step(dt);
-            for (int j = 0; j < cur_emitter.particles.size(); j++)
+            if (!cur_emitter.is_flock) // behave normally
             {
-                particle &cur_particle = cur_emitter.particles[j];
-                if (cur_particle.alive) // skip dead particle
-                {
-                    vec3 new_acceleration = get_net_force(cur_particle.position, cur_particle.velocity, PARTICLE_MASS) / PARTICLE_MASS;
-                    vec3 new_velocity = cur_particle.velocity + new_acceleration * (dt / MS_PER_SEC);
-                    vec3 new_position = cur_particle.position + new_velocity * (dt / MS_PER_SEC);
-                    // std::cout << "pos: (" << cur_particle.position.x() << ", "
-                    //           << cur_particle.position.y() << ", "
-                    //           << cur_particle.position.z() << ")" << std::endl;
-
-                    vec3 direction = new_position - cur_particle.position;
-                    double length = direction.length() + 0.01; //need to add extra to prevent points from going thru walls
-                    ray r = ray(cur_particle.position, unit_vector(direction));
-                    double closest_so_far = length;
-                    phy_hit_record rec;
-
-                    if (world_bvh->hit(r, interval(0.001, closest_so_far), rec))
-                    {
-                        // resolve collision
-                        double restitution = rec.hit_object->restitution; // needed?
-                        vec3 n = rec.normal;
-                        double v_dot_n = dot(new_velocity, n);
-
-                        // reflect
-                        vec3 reflected_velocity = new_velocity - n * ((1.0 + restitution) * v_dot_n);
-
-                        cur_particle.position = rec.p + (n * 0.01); //maybe change
-                        cur_particle.velocity = reflected_velocity;
-                    }
-                    else
-                    {
-                        cur_particle.position = new_position;
-                        cur_particle.velocity = new_velocity;
-                    }
-                }
+                normal_particle_behavior(cur_emitter, dt);
+            }
+            else
+            {
+                // fun behavior!
             }
         }
     }
@@ -435,6 +407,68 @@ private:
         }
 
         return false; // closest approach happens outside this frame's time window
+    }
+
+    void normal_particle_behavior(particle_emitter &cur_emitter, double dt)
+    {
+        for (int j = 0; j < cur_emitter.particles.size(); j++)
+        {
+            particle &cur_particle = cur_emitter.particles[j];
+            if (cur_particle.alive) // skip dead particle
+            {
+                vec3 new_acceleration = get_net_force(cur_particle.position, cur_particle.velocity, PARTICLE_MASS) / PARTICLE_MASS;
+                vec3 new_velocity = cur_particle.velocity + new_acceleration * (dt / MS_PER_SEC);
+                vec3 new_position = cur_particle.position + new_velocity * (dt / MS_PER_SEC);
+
+                vec3 direction = new_position - cur_particle.position;
+                double length = direction.length() + 0.01; // need to add extra to prevent points from going thru walls
+                ray r = ray(cur_particle.position, unit_vector(direction));
+                double closest_so_far = length;
+                phy_hit_record rec;
+
+                if (world_bvh->hit(r, interval(0.001, closest_so_far), rec))
+                {
+                    // resolve collision
+                    double restitution = rec.hit_object->restitution; // needed?
+                    vec3 n = rec.normal;
+                    double v_dot_n = dot(new_velocity, n);
+
+                    // reflect
+                    vec3 reflected_velocity = new_velocity - n * ((1.0 + restitution) * v_dot_n);
+
+                    cur_particle.position = rec.p + (n * 0.01); // maybe change
+                    cur_particle.velocity = reflected_velocity;
+                }
+                else
+                {
+                    cur_particle.position = new_position;
+                    cur_particle.velocity = new_velocity;
+                }
+            }
+        }
+    }
+
+    void flock_particle_behavior(particle_emitter &cur_emitter, double dt)
+    {
+        particle_bvh neighbor_bvh;
+        std::vector<int> neighbors; // maybe declare with max particle count idk
+        neighbor_bvh.build(cur_emitter.particles);
+        for (size_t i = 0; i < cur_emitter.particles.size(); i++)
+        {
+            particle &p = cur_emitter.particles[i];
+            if (!p.alive) {
+                continue;
+            }
+
+            neighbor_bvh.query_radius(p.position, NEIGHBOR_RADIUS, neighbors);
+            for (int j : neighbors)
+            {
+                if (j == (int)i) {
+                    continue; // skip self
+                }
+                // separation / alignment / cohesion using cur_emitter.particles[j]
+            }
+        }
     }
 };
 #endif
