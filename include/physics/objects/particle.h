@@ -8,7 +8,7 @@
 struct flock_params
 {
     double neighbor_radius = 3.0;   // how far a boid can see
-    double separation_radius = 0.5; // personal space; keep this < neighbor_radius
+    double separation_radius = 1.0; // personal space; keep this < neighbor_radius
     double separation_w = 1.5;      // weights: separation usually needs to win to avoid overlap
     double alignment_w = 1.0;
     double cohesion_w = 1.0;
@@ -19,6 +19,13 @@ struct flock_params
     double avoid_w = 3.0;              // avoidance gets first claim on the force budget
     double avoid_lookahead = 2.0;      // base feeler length (world units)
     double avoid_lookahead_time = 0.6; // extra feeler length = speed * this 
+
+    // for fluid sim
+    double rest_density = 1000.0;
+    double stiffness = 50.0;
+    double viscosity = 0.1;
+    double particle_mass = 1.0;
+    double max_accel = 200.0; 
 
     bool use_bvh = true; //seems to increase performance 25% on lower counts, higher/more spread out should be more
 };
@@ -34,7 +41,7 @@ struct particle
     bool alive = false;
 };
 
-enum class emitter_behavior { flocking };
+enum class emitter_behavior { flocking, fluid };
 
 class particle_emitter
 {

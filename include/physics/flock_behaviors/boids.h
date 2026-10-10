@@ -5,7 +5,7 @@
 #include <cmath>
 #include <vector>
 
-#include "particle_bvh.h"
+#include "../utilities/particle_bvh.h"
 #include "../hittable.h"
 
 #define TOO_SMALL 1e-6

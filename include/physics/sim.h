@@ -10,7 +10,9 @@
 
 #include "utilities/phy_bvh.h"
 #include "utilities/particle_bvh.h"
-#include "utilities/boids.h"
+
+#include "flock_behaviors/boids.h"
+#include "flock_behaviors/sph.h"
 
 #include <map>           // Required for std::map
 #include <unordered_map> // Required for std::unordered_map
@@ -197,7 +199,7 @@ public:
         auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(
             stop - start);
         particle_step(dt);
-        //std::cout << duration.count()  << " ns\n";
+        // std::cout << duration.count()  << " ns\n";
         cur_step++;
         return duration.count();
     }
@@ -215,7 +217,7 @@ public:
             else
             {
                 // fun behavior!
-                flock_particle_behavior(cur_emitter,dt);
+                flock_particle_behavior(cur_emitter, dt);
             }
         }
     }
@@ -457,7 +459,18 @@ private:
         std::vector<vec3> steering;
 
         neighbor_bvh.build(cur_emitter.particles);
-        compute_flock_steering(cur_emitter.particles, neighbor_bvh, cur_emitter.flock, steering, world_bvh.get());
+        switch (cur_emitter.behavior)
+        {
+        case emitter_behavior::flocking:
+            compute_flock_steering(cur_emitter.particles, neighbor_bvh, cur_emitter.flock, steering, world_bvh.get());
+            break;
+        case emitter_behavior::fluid:
+            compute_sph_accel(cur_emitter.particles, neighbor_bvh, cur_emitter.flock, fluid_scratch, steering);
+            break;
+        default:
+            break; //ehh
+        }
+        //compute_flock_steering(cur_emitter.particles, neighbor_bvh, cur_emitter.flock, steering, world_bvh.get());
         for (size_t i = 0; i < cur_emitter.particles.size(); i++)
         {
             particle &p = cur_emitter.particles[i];
@@ -465,11 +478,14 @@ private:
             {
                 continue;
             }
-             p.velocity = limit_length(p.velocity + steering[i] * (dt/MS_PER_SEC), cur_emitter.flock.max_speed);
+            p.velocity = limit_length(p.velocity + steering[i] * (dt / MS_PER_SEC), cur_emitter.flock.max_speed);
         }
 
         normal_particle_behavior(cur_emitter, dt); // now just do normal behavior I guess
     }
+
+    private:
+    sph_scratch fluid_scratch;
 };
 
 #endif

@@ -1,9 +1,9 @@
 #ifndef PARTICLE_CONTAINER_H
 #define PARTICLE_CONTAINER_H
 
-#include "hittable.h"
-#include "sphere.h"
-#include "physics/objects/particle.h"
+#include "../hittable.h"
+#include "../sphere.h"
+#include "../physics/objects/particle.h"
 
 class particle_container : public hittable
 {

@@ -6,8 +6,8 @@
 #include <limits>
 #include <vector>
 
-#include "hittable.h"
-#include "physics/objects/particle.h"
+#include "../hittable.h"
+#include "../physics/objects/particle.h"
 
 class metaball : public hittable
 {
