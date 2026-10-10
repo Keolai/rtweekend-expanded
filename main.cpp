@@ -24,8 +24,8 @@
 
 #define SIM_RATE_MS 33 //interval
 
-#define RECORDING false
-#define MAX_RECORDING_STEPS 400
+#define RECORDING true
+#define MAX_RECORDING_STEPS 500
 
 std::atomic<bool> running{true};
 std::mutex state_mutex;
@@ -211,9 +211,9 @@ int main()
 
     
     //PARAMETERS=(const vec3 &position, const vec3 &direction, double spread, double speed, double flow, bool is_flock)
-    particle_emitter& emitter = sim.add_particle_emitter(vec3(0,4,0),vec3(0,-1,0),1,1,100,true);
+    particle_emitter& emitter = sim.add_particle_emitter(vec3(0,4,0),vec3(0,-1,0),0.2,1,500,true);
     emitter.behavior = emitter_behavior::fluid; //haha
-    auto vis_emitter = std::make_shared<metaball>(emitter.particles,smile_mat, 0.1);
+    auto vis_emitter = std::make_shared<metaball>(emitter.particles,smile_mat, 0.2);
     world.add(vis_emitter);
 
     // particle_emitter& sec_emitter = sim.add_particle_emitter(vec3(0.5,4,0),vec3(0,-1,0),1,1,20);
@@ -297,7 +297,7 @@ int main()
     }
     else
     {
-        cam.image_resolution = 1;
+        cam.image_resolution = 2;
         cam.shadow_samples = 3;
         int cur_step = 0;
         while (!win.poll_for_event() && cur_step <= MAX_RECORDING_STEPS)

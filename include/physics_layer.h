@@ -106,6 +106,7 @@ public:
      particle_emitter& add_particle_emitter(const vec3 &position, const vec3 &direction, double spread, double speed, double flow, bool is_flock){
         particle_emitter new_emitter = particle_emitter(position, direction, spread, speed, 20, flow);
         new_emitter.is_flock = is_flock;
+        new_emitter.flock.rest_density = estimate_rest_density(new_emitter.flock.neighbor_radius, 0.27, new_emitter.flock.particle_mass); 
         simulation.emitters.emplace_back(new_emitter);
         return simulation.emitters.back();
     }

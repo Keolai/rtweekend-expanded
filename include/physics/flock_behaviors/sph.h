@@ -18,7 +18,8 @@ struct sph_scratch
     std::vector<int> tmp;
 };
 
-// Kernel normalization constants for 3D, smoothing radius h (Muller et al. 2003).
+// Kernel normalization constants for 3D, smoothing radius h
+// https://matthias-research.github.io/pages/publications/sca03.pdf "Particle-Based Fluid Simulation for Interactive Applications"
 struct sph_kernels
 {
     double h, h2;
@@ -57,7 +58,7 @@ inline double estimate_rest_density(double h, double spacing, double mass)
 }
 
 // One acceleration per particle (zero for dead particles).
-// Reads positions/velocities only, so results don't depend on update order.
+// Reads positions/velocities only
 template <typename Params>
 inline void compute_sph_accel(const std::vector<particle> &particles,
                               particle_bvh &bvh,
@@ -77,22 +78,26 @@ inline void compute_sph_accel(const std::vector<particle> &particles,
 
     bvh.build(particles);
 
-    // ---- pass 0: query each alive particle once and cache its neighbor list ----
+    // cache neighbor list of each particle
     for (size_t i = 0; i < n; i++)
     {
         s.nbr_start[i] = static_cast<int>(s.nbr_index.size());
         if (!particles[i].alive)
+        {
             continue; // empty range
+        }
         bvh.query_radius(particles[i].position, K.h, s.tmp);
         s.nbr_index.insert(s.nbr_index.end(), s.tmp.begin(), s.tmp.end());
     }
     s.nbr_start[n] = static_cast<int>(s.nbr_index.size());
 
-    // ---- pass 1: density and pressure ----
+    // density and pressure
     for (size_t i = 0; i < n; i++)
     {
         if (!particles[i].alive)
+        {
             continue;
+        }
 
         double rho = 0.0;
         for (int k = s.nbr_start[i]; k < s.nbr_start[i + 1]; k++)
@@ -106,15 +111,17 @@ inline void compute_sph_accel(const std::vector<particle> &particles,
             }
         }
         s.density[i] = rho;
-        // Clamp at 0: negative pressure makes particles clump together instead of spreading out.
+        // Clamp at 0, negative pressure makes particles clump together instead of spreading out.
         s.pressure[i] = std::max(0.0, sp.stiffness * (rho - sp.rest_density));
     }
 
-    // ---- pass 2: pressure + viscosity accelerations ----
+    //pass 2: pressure and viscosity accelerations
     for (size_t i = 0; i < n; i++)
     {
         if (!particles[i].alive)
+        {
             continue;
+        }
 
         const particle &pi = particles[i];
         const double rho_i = s.density[i];
@@ -125,7 +132,9 @@ inline void compute_sph_accel(const std::vector<particle> &particles,
         {
             const int j = s.nbr_index[k];
             if (j == static_cast<int>(i))
+            {
                 continue;
+            }
 
             const particle &pj = particles[j];
             vec3 rij = pi.position - pj.position;

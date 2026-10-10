@@ -5,6 +5,8 @@
 #include <random>
 #include <vector>
 
+#define DEFAULT_MAX 1000
+
 struct flock_params
 {
     double neighbor_radius = 3.0;   // how far a boid can see
@@ -12,25 +14,23 @@ struct flock_params
     double separation_w = 1.5;      // weights: separation usually needs to win to avoid overlap
     double alignment_w = 1.0;
     double cohesion_w = 1.0;
-    double max_speed = 4.0;         
-    double max_force = 8.0;         
- 
+    double max_speed = 4.0;
+    double max_force = 8.0;
+
     // obstacle avoidance
     double avoid_w = 3.0;              // avoidance gets first claim on the force budget
     double avoid_lookahead = 2.0;      // base feeler length (world units)
-    double avoid_lookahead_time = 0.6; // extra feeler length = speed * this 
+    double avoid_lookahead_time = 0.6; // extra feeler length = speed * this
 
     // for fluid sim
     double rest_density = 1000.0;
     double stiffness = 50.0;
     double viscosity = 0.1;
     double particle_mass = 1.0;
-    double max_accel = 200.0; 
+    double max_accel = 200.0;
 
-    bool use_bvh = true; //seems to increase performance 25% on lower counts, higher/more spread out should be more
+    bool use_bvh = true; // seems to increase performance 25% on lower counts, higher/more spread out should be more
 };
-
-#define DEFAULT_MAX 2000
 
 struct particle
 {
@@ -41,7 +41,11 @@ struct particle
     bool alive = false;
 };
 
-enum class emitter_behavior { flocking, fluid };
+enum class emitter_behavior
+{
+    flocking,
+    fluid
+};
 
 class particle_emitter
 {
@@ -49,14 +53,18 @@ public:
     std::vector<particle> particles;
     bool is_flock = false;
 
-    flock_params flock; 
-    emitter_behavior behavior = emitter_behavior::flocking; //default 
+    flock_params flock;
+    emitter_behavior behavior = emitter_behavior::flocking; // default
 
     particle_emitter(vec3 position, vec3 direction, double spread, double speed, double lifespan, double flow, int max) : position(position),
                                                                                                                           direction(direction), spread(spread), speed(speed), lifespan(lifespan), flow(flow), max(max) { particles.resize(max); }
 
     particle_emitter(vec3 position, vec3 direction, double spread, double speed, double lifespan, double flow) : position(position),
-                                                                                                                 direction(direction), spread(spread), speed(speed), lifespan(lifespan), flow(flow), max(DEFAULT_MAX) { particles.resize(max); }
+                                                                                                                 direction(direction), spread(spread), speed(speed), lifespan(lifespan), flow(flow), max(DEFAULT_MAX)
+    {
+        particles.resize(max);
+    }
+
     void spawn(particle &p)
     {
         p.position = position;
@@ -114,7 +122,8 @@ public:
             }
             // now we can check collisions
         }
-          if (accumulator > 1.0) accumulator = 1.0;
+        if (accumulator > 1.0)
+            accumulator = 1.0;
     }
 
 private:
