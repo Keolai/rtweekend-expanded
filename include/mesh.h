@@ -176,6 +176,12 @@ public:
         }
     }
 
+    void rotate(const vec3 &degrees){ //idkkkkk
+        for (int i = 0; i < triangles.size(); i++){
+            triangles[i]->rotate(degrees);
+        }
+    }
+
 private:
     std::vector<std::shared_ptr<tri>> triangles;
 

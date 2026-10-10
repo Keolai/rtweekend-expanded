@@ -8,7 +8,7 @@
 #include "../utilities/particle_bvh.h"
 #include "boids.h" // behavior param enum and limit_length
 
-// Working storage. Keep one of these as a member of sim so the buffers are reused every frame.
+// working storage. Keep one of these as a member of sim so the buffers are reused every frame.
 struct sph_scratch
 {
     std::vector<int> nbr_start; // size n+1; neighbors of i are nbr_index[nbr_start[i] .. nbr_start[i+1])
@@ -18,7 +18,7 @@ struct sph_scratch
     std::vector<int> tmp;
 };
 
-// Kernel normalization constants for 3D, smoothing radius h
+// kernel normalization constants for 3D smoothing radius h
 // https://matthias-research.github.io/pages/publications/sca03.pdf "Particle-Based Fluid Simulation for Interactive Applications"
 struct sph_kernels
 {
@@ -37,7 +37,6 @@ struct sph_kernels
 };
 
 // The density a particle has inside a perfectly settled cubic lattice with the given spacing.
-// Use this as rest_density so a fluid at rest feels (almost) no pressure.
 inline double estimate_rest_density(double h, double spacing, double mass)
 {
     const sph_kernels K(h);
@@ -58,7 +57,7 @@ inline double estimate_rest_density(double h, double spacing, double mass)
 }
 
 // One acceleration per particle (zero for dead particles).
-// Reads positions/velocities only
+// reads positions/velocities only
 template <typename Params>
 inline void compute_sph_accel(const std::vector<particle> &particles,
                               particle_bvh &bvh,
@@ -115,7 +114,7 @@ inline void compute_sph_accel(const std::vector<particle> &particles,
         s.pressure[i] = std::max(0.0, sp.stiffness * (rho - sp.rest_density));
     }
 
-    //pass 2: pressure and viscosity accelerations
+    // pass 2: pressure and viscosity accelerations
     for (size_t i = 0; i < n; i++)
     {
         if (!particles[i].alive)
@@ -146,13 +145,13 @@ inline void compute_sph_accel(const std::vector<particle> &particles,
             const double rho_j = s.density[j];
 
             // Pressure, in the symmetric (momentum-conserving) form:
-            //   a_i = -sum_j m * (p_i/rho_i^2 + p_j/rho_j^2) * gradW(r_ij)
+            // a_i = -sum_j m * (p_i/rho_i^2 + p_j/rho_j^2) * gradW(r_ij)
             vec3 gradW = rij * (K.spiky_grad * (K.h - r) * (K.h - r) / r);
             double p_term = p_i_term + s.pressure[j] / (rho_j * rho_j);
             a = a - gradW * (m * p_term);
 
-            // Viscosity: pulls velocity toward the neighbors' average
-            //   a_i = (mu / rho_i) * sum_j m * (v_j - v_i) / rho_j * lapW(r)
+            // Viscosity: pulls velocity toward the neighbors average
+            // a_i = (mu / rho_i) * sum_j m * (v_j - v_i) / rho_j * lapW(r)
             a = a + (pj.velocity - pi.velocity) * (sp.viscosity * m * K.visc_lap * (K.h - r) / (rho_i * rho_j));
         }
 

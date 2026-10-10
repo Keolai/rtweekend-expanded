@@ -2,6 +2,7 @@
 #define tri_H
 
 #include "hittable.h"
+#include "quaternion.h"
 #include <array>
 
 class tri : public hittable
@@ -22,6 +23,9 @@ public:
         normals_stored = true;
         textcoords_stored = false;
         tangent_space();
+        original_normals = normals;
+        original_tangent = const_tangent;
+        original_bitangent = const_bitangent;
     }
 
     tri(const std::array<point3, 3> &vertices, const std::array<point3, 3> &normals,
@@ -32,6 +36,9 @@ public:
         normals_stored = true;
         textcoords_stored = true;
         tangent_space();
+        original_normals = normals;
+        original_tangent = const_tangent;
+        original_bitangent = const_bitangent;
     }
 
     bool hit(const ray &r, interval ray_t, hit_record &rec) const override
@@ -142,15 +149,27 @@ public:
 
     void position(vec3 &pos) override
     {
-        for (int i = 0; i < 3; i++)
-        {
-            copy(original_vertices[i] + pos, vertices[i]);
-        }
+        current_position = pos;
+        update();
+    }
+
+    void rotate(const vec3 &degrees)
+    {
+        orientation = (quat::from_euler(degrees) * orientation).normalized();
+        update();
+    }
+
+    void rotate_axis(const vec3 &axis, double degrees)
+    {
+        orientation = (quat::from_axis_angle(axis, degrees) * orientation).normalized();
+        update();
     }
 
 private:
     bool normals_stored;
     bool textcoords_stored;
+    vec3 current_position = vec3(0);
+    quat orientation;
     std::array<point3, 3> vertices;
     std::array<point3, 3> original_vertices; // original positions of vertices in model
     std::array<point3, 3> normals;
@@ -158,6 +177,37 @@ private:
     vec3 const_tangent;
     vec3 const_bitangent;
     shared_ptr<material> mat;
+
+    std::array<point3, 3> original_normals;
+    vec3 original_tangent, original_bitangent;
+
+    static vec3 rotate_point(vec3 p, double rx, double ry, double rz)
+    {
+        double c;
+        double s;
+        // X axis
+        c = std::cos(rx);
+        s = std::sin(rx);
+        p = vec3(p.x(),
+                 c * p.y() - s * p.z(),
+                 s * p.y() + c * p.z());
+
+        // Y axis
+        c = std::cos(ry);
+        s = std::sin(ry);
+        p = vec3(c * p.x() + s * p.z(),
+                 p.y(),
+                 -s * p.x() + c * p.z());
+
+        // Z axis
+        c = std::cos(rz);
+        s = std::sin(rz);
+        p = vec3(c * p.x() - s * p.y(),
+                 s * p.x() + c * p.y(),
+                 p.z());
+
+        return p;
+    }
 
     void tangent_space()
     {
@@ -173,8 +223,8 @@ private:
         {
             // Degenerate/duplicate UVs: fall back to an arbitrary tangent
             // perpendicular to the face normal.
-             printf("degenerate UV determinant! denom=%e, UVs: (%f,%f) (%f,%f) (%f,%f)\n",
-            denom, UV[0].x(), UV[0].y(), UV[1].x(), UV[1].y(), UV[2].x(), UV[2].y());
+            printf("degenerate UV determinant! denom=%e, UVs: (%f,%f) (%f,%f) (%f,%f)\n",
+                   denom, UV[0].x(), UV[0].y(), UV[1].x(), UV[1].y(), UV[2].x(), UV[2].y());
             vec3 n = unit_vector(cross(edge1, edge2));
             vec3 ref = (std::fabs(n.x()) < 0.999) ? vec3(1, 0, 0) : vec3(0, 1, 0);
             const_tangent = unit_vector(ref - dot(ref, n) * n);
@@ -201,6 +251,23 @@ private:
 
         rec.tangent = tangent;
         rec.bitangent = bitangent;
+    }
+
+    void update()
+    {
+        const point3 pivot = (original_vertices[0] + original_vertices[1] + original_vertices[2]) / 3.0;
+
+        for (int i = 0; i < 3; i++)
+        {
+            vertices[i] = pivot + orientation.rotate(original_vertices[i] - pivot) + current_position;
+            if (normals_stored)
+                normals[i] = orientation.rotate(original_normals[i]);
+        }
+        if (normals_stored)
+        {
+            const_tangent = orientation.rotate(original_tangent);
+            const_bitangent = orientation.rotate(original_bitangent);
+        }
     }
 };
 
