@@ -17,11 +17,18 @@ class physics_layer
 {
 public:
     physics_layer() {}
+    double steps = 0;
+    double total_ns = 0;
 
     void step(double delta)
     {
         std::lock_guard<std::mutex> lock(state_mutex_);
-        simulation.step(delta);
+        steps++;
+        total_ns += simulation.step(delta);
+    }
+
+    double get_steps(){
+        return steps;
     }
 
     int add_sphere_to_world(const vec3 &pos, double radius, bool is_static)

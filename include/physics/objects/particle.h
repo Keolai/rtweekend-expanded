@@ -8,7 +8,7 @@
 struct flock_params
 {
     double neighbor_radius = 3.0;   // how far a boid can see
-    double separation_radius = 1.0; // personal space; keep this < neighbor_radius
+    double separation_radius = 0.5; // personal space; keep this < neighbor_radius
     double separation_w = 1.5;      // weights: separation usually needs to win to avoid overlap
     double alignment_w = 1.0;
     double cohesion_w = 1.0;
@@ -19,9 +19,11 @@ struct flock_params
     double avoid_w = 3.0;              // avoidance gets first claim on the force budget
     double avoid_lookahead = 2.0;      // base feeler length (world units)
     double avoid_lookahead_time = 0.6; // extra feeler length = speed * this 
+
+    bool use_bvh = true; //seems to increase performance 25% on lower counts, higher/more spread out should be more
 };
 
-#define DEFAULT_MAX 1000
+#define DEFAULT_MAX 2000
 
 struct particle
 {

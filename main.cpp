@@ -187,7 +187,7 @@ int main()
 
     //sim.add_force(vec3(0, 1, 0), 5.0); // gravity
 
-    // sim.add_vortex_force(vec3(0),vec3(0,1,0),5);
+    sim.add_vortex_force(vec3(0),vec3(0,1,0),5);
     sim.add_range_force(vec3(0),2,10);
 
     // mesh teapot_Model = mesh("models/solid_teapot.obj", tex_mat, world); //this is to check stuff
@@ -206,8 +206,8 @@ int main()
 
     
     //PARAMETERS=(const vec3 &position, const vec3 &direction, double spread, double speed, double flow, bool is_flock)
-    particle_emitter& emitter = sim.add_particle_emitter(vec3(-4,0,3),vec3(-1,-1,0),1,1,10,true);
-    auto vis_emitter = std::make_shared<particle_container>(emitter.particles,smile_mat, 0.2);
+    particle_emitter& emitter = sim.add_particle_emitter(vec3(-4,0,3),vec3(-1,-1,0),1,1,1000,true);
+    auto vis_emitter = std::make_shared<metaball>(emitter.particles,smile_mat, 0.2);
     world.add(vis_emitter);
 
     // particle_emitter& sec_emitter = sim.add_particle_emitter(vec3(0.5,4,0),vec3(0,-1,0),1,1,20);
@@ -268,6 +268,8 @@ int main()
 
     populate_gui_start_state(cam);
 
+    double total_ns = 0;
+
     if (!RECORDING) //run normally
     {
 
@@ -284,6 +286,7 @@ int main()
         }
 
         running = false;
+        total_ns += sim.total_ns;
         physics_thread.join();
     }
     else
@@ -301,5 +304,7 @@ int main()
             write_to_file(cam.image_width, cam.get_height(), sim.get_step());   
             cur_step++;
         }
+        total_ns += sim.total_ns;
     }
+    printf("Average physics rendering time: %f ns\n", (total_ns/sim.get_steps()));
 }

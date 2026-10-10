@@ -34,7 +34,7 @@ public:
 
     std::vector<shared_ptr<force>> forces;
 
-    int step(double dt) // dt should be ms;
+    double step(double dt) // dt should be ms;
     {
         auto start = std::chrono::high_resolution_clock::now();
         world_bvh = make_shared<phy_bvh_node>( // is this slow?
@@ -194,12 +194,12 @@ public:
             }
         }
         auto stop = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
+        auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(
             stop - start);
         particle_step(dt);
-        // std::cout << duration.count()  << " ms\n";
+        //std::cout << duration.count()  << " ns\n";
         cur_step++;
-        return 0;
+        return duration.count();
     }
 
     void particle_step(double dt)
@@ -466,8 +466,6 @@ private:
                 continue;
             }
              p.velocity = limit_length(p.velocity + steering[i] * (dt/MS_PER_SEC), cur_emitter.flock.max_speed);
-    // std::cout << "speed=" << p.velocity.length()
-    //           << " steer=" << steering[i].length() << std::endl;
         }
 
         normal_particle_behavior(cur_emitter, dt); // now just do normal behavior I guess
