@@ -4,10 +4,6 @@
 #include <cmath>
 #include "vec3.h"
 
-inline double degrees_to_radians(double degrees){ //ok
-        return degrees * (M_PI / 180);
-    }
-
 struct quat {
     double w, x, y, z;
 

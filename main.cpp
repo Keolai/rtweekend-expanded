@@ -24,7 +24,7 @@
 
 #define SIM_RATE_MS 33 //interval
 
-#define RECORDING true
+#define RECORDING false
 #define MAX_RECORDING_STEPS 500
 
 std::atomic<bool> running{true};
@@ -206,6 +206,7 @@ int main()
 
     //bowl
     auto bowl_Model = std::make_shared<mesh>("models/bowl.obj", tex_mat, world); //this is to check stuff
+    bowl_Model->rotate(vec3(30,20,0));
     int bowl_physics = sim.add_mesh_to_world("models/bowl.obj",true);
     sim.connect_objects(bowl_Model->id,bowl_physics);
 

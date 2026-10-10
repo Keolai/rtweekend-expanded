@@ -14,6 +14,7 @@ public:
         copy_vertices(vertices, original_vertices);
         normals_stored = false;
         textcoords_stored = false;
+        pivot = original_centroid();
     }
 
     tri(const std::array<point3, 3> &vertices, const std::array<point3, 3> &normals, shared_ptr<material> mat)
@@ -26,6 +27,7 @@ public:
         original_normals = normals;
         original_tangent = const_tangent;
         original_bitangent = const_bitangent;
+        pivot = original_centroid();
     }
 
     tri(const std::array<point3, 3> &vertices, const std::array<point3, 3> &normals,
@@ -39,6 +41,7 @@ public:
         original_normals = normals;
         original_tangent = const_tangent;
         original_bitangent = const_bitangent;
+        pivot = original_centroid();
     }
 
     bool hit(const ray &r, interval ray_t, hit_record &rec) const override
@@ -165,6 +168,17 @@ public:
         update();
     }
 
+    void set_pivot(const point3 &p)
+    {
+        pivot = p;
+        update();
+    }
+
+     point3 original_centroid() const
+    {
+        return (original_vertices[0] + original_vertices[1] + original_vertices[2]) / 3.0;
+    }
+
 private:
     bool normals_stored;
     bool textcoords_stored;
@@ -177,6 +191,8 @@ private:
     vec3 const_tangent;
     vec3 const_bitangent;
     shared_ptr<material> mat;
+
+    point3 pivot;
 
     std::array<point3, 3> original_normals;
     vec3 original_tangent, original_bitangent;
@@ -255,7 +271,6 @@ private:
 
     void update()
     {
-        const point3 pivot = (original_vertices[0] + original_vertices[1] + original_vertices[2]) / 3.0;
 
         for (int i = 0; i < 3; i++)
         {
