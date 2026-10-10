@@ -11,6 +11,7 @@ public:
         : vertices(vertices)
     {
         copy_vertices(vertices, original_vertices);
+        pivot = original_centroid();
     }
 
     phy_tri(point3 &v1, point3 &v2, point3 &v3)
@@ -21,6 +22,7 @@ public:
         original_vertices[0] = v1;
         original_vertices[1] = v2;
         original_vertices[2] = v3;
+        pivot = original_centroid();
     }
 
     bool hit(const ray &r, interval ray_t, phy_hit_record &rec) override
@@ -107,10 +109,31 @@ public:
 
     void position(vec3 &pos) override
     {
-        for (int i = 0; i < 3; i++)
-        {
-            copy(original_vertices[i] + pos, vertices[i]);
-        }
+        current_position = pos;
+        update();
+    }
+
+    void rotate(const vec3 &degrees)
+    {
+        orientation = (quat::from_euler(degrees) * orientation).normalized();
+        update();
+    }
+
+    void rotate_axis(const vec3 &axis, double degrees)
+    {
+        orientation = (quat::from_axis_angle(axis, degrees) * orientation).normalized();
+        update();
+    }
+
+    void set_pivot(const point3 &p)
+    {
+        pivot = p;
+        update();
+    }
+
+    point3 original_centroid() const
+    {
+        return (original_vertices[0] + original_vertices[1] + original_vertices[2]) / 3.0;
     }
 
     void update_state() override
@@ -134,7 +157,8 @@ public:
         return vec3(0);
     }
 
-    std::vector<vec3> get_vertices() const override{
+    std::vector<vec3> get_vertices() const override
+    {
         std::vector<vec3> tmp;
         return tmp;
     }
@@ -142,6 +166,17 @@ public:
 private:
     std::array<point3, 3> vertices;
     std::array<point3, 3> original_vertices; // original positions of vertices in model
+    vec3 current_position = vec3(0);
+    quat orientation;
+    point3 pivot;
+
+    void update()
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            vertices[i] = pivot + orientation.rotate(original_vertices[i] - pivot) + current_position;
+        }
+    }
 };
 
 #endif

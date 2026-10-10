@@ -31,15 +31,16 @@ public:
 
     bool hit(const ray &r, interval ray_t, phy_hit_record &rec) override
     {
-        if (model_node) //in model bvh reduces up rendering by about 40% with simple models
+        if (model_node) // in model bvh reduces up rendering by about 40% with simple models
         {
             return model_node->hit(r, ray_t, rec);
-        } else {
+        }
+        else
+        {
             create_bvh();
             return model_node->hit(r, ray_t, rec);
         }
         return false;
-
     }
 
     bool load_model()
@@ -146,8 +147,9 @@ public:
         return box;
     }
 
-    void create_bvh(){
-         model_node = std::make_shared<phy_bvh_node>(
+    void create_bvh()
+    {
+        model_node = std::make_shared<phy_bvh_node>(
             triangles,
             0,
             triangles.size());
@@ -159,6 +161,29 @@ public:
         for (int i = 0; i < triangles.size(); i++)
         {
             triangles[i]->position(newPos); // maybe
+        }
+    }
+
+    void set_pivot_to_center()
+    {
+        point3 sum(0, 0, 0);
+        for (auto &t : triangles)
+        {
+            sum += std::static_pointer_cast<phy_tri>(t)->original_centroid();
+        }
+        pivot = sum / triangles.size();
+
+        for (auto &t : triangles)
+        {
+            std::static_pointer_cast<phy_tri>(t)->set_pivot(pivot);
+        }
+    }
+
+    void rotate(const vec3 &degrees)
+    {
+        for (auto &t : triangles)
+        {
+            std::static_pointer_cast<phy_tri>(t)->rotate(degrees);
         }
     }
 
@@ -203,7 +228,9 @@ private:
     point3 pos = vec3(0);
     std::string file_path;
     std::vector<vec3> vertices; // original vertices
-    std::shared_ptr<phy_bvh_node>  model_node;
+    std::shared_ptr<phy_bvh_node> model_node;
+
+    point3 pivot;
 
     int parse_face_index(const std::string &token)
     {
