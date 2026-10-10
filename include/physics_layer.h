@@ -96,6 +96,13 @@ public:
         return simulation.emitters.back();
     }
 
+     particle_emitter& add_particle_emitter(const vec3 &position, const vec3 &direction, double spread, double speed, double flow, bool is_flock){
+        particle_emitter new_emitter = particle_emitter(position, direction, spread, speed, 20, flow);
+        new_emitter.is_flock = is_flock;
+        simulation.emitters.emplace_back(new_emitter);
+        return simulation.emitters.back();
+    }
+
     void connect_objects(int renderId, int physicsId){
         idMap.insert({renderId,physicsId});
         simulation.add_objects_to_map();
