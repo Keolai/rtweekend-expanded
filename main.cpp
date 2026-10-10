@@ -166,6 +166,11 @@ void physics_thread_func(physics_layer &sim, std::chrono::milliseconds interval)
         {
             sim.step(interval.count()); // locking now happens inside step()
         }
+         auto now = std::chrono::steady_clock::now();
+        if (next_tick < now) //to fix overrunning
+        {
+            next_tick = now + std::chrono::milliseconds(1);
+        }
         std::this_thread::sleep_until(next_tick);
     }
 }

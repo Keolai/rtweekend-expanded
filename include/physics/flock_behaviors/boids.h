@@ -13,7 +13,8 @@
 inline vec3 limit_length(const vec3 &v, double max_len)
 {
     double l2 = v.length_squared();
-    if (l2 > max_len * max_len) {
+    if (l2 > max_len * max_len)
+    {
         return v * (max_len / std::sqrt(l2));
     }
     return v;
@@ -23,7 +24,8 @@ inline vec3 limit_length(const vec3 &v, double max_len)
 inline vec3 steer_toward(const vec3 &desired_dir, const vec3 &velocity, const flock_params &fp)
 {
     double l2 = desired_dir.length_squared();
-    if (l2 < TOO_SMALL) {
+    if (l2 < TOO_SMALL)
+    {
         return vec3(0, 0, 0);
     }
     vec3 desired_velocity = desired_dir * (fp.max_speed / std::sqrt(l2));
@@ -75,8 +77,12 @@ inline void brute_force_neighbors(const std::vector<particle> &particles, const 
     out.clear();
     const double r2 = radius * radius;
     for (size_t j = 0; j < particles.size(); j++)
+    {
         if (particles[j].alive && (particles[j].position - center).length_squared() <= r2)
+        {
             out.push_back(static_cast<int>(j));
+        }
+    }
 }
 
 // if world is nullptr, disables obstacle avoidance
@@ -87,8 +93,9 @@ inline void compute_flock_steering(const std::vector<particle> &particles,
                                    phy_hittable *world = nullptr)
 {
     steering.assign(particles.size(), vec3(0, 0, 0));
-    if (fp.use_bvh){
-    bvh.build(particles);
+    if (fp.use_bvh)
+    {
+        bvh.build(particles);
     }
 
     std::vector<int> neighbors;
@@ -97,15 +104,20 @@ inline void compute_flock_steering(const std::vector<particle> &particles,
     for (size_t i = 0; i < particles.size(); i++)
     {
         const particle &p = particles[i];
-        if (!p.alive) {
+        if (!p.alive)
+        {
             continue;
         }
 
-        //flocking forces
+        // flocking forces
         vec3 flock(0, 0, 0);
-        if(fp.use_bvh) {
+
+        if (fp.use_bvh)
+        {
             bvh.query_radius(p.position, fp.neighbor_radius, neighbors);
-        } else {
+        }
+        else
+        {
             brute_force_neighbors(particles, p.position, fp.neighbor_radius, neighbors);
         }
 
@@ -116,8 +128,9 @@ inline void compute_flock_steering(const std::vector<particle> &particles,
 
         for (int j : neighbors)
         {
-            if (j == static_cast<int>(i))
+            if (j == static_cast<int>(i)) {
                 continue; // skip self
+            }
 
             const particle &q = particles[j];
             center = center + q.position;
@@ -142,14 +155,16 @@ inline void compute_flock_steering(const std::vector<particle> &particles,
             flock = cohesion * fp.cohesion_w + alignment * fp.alignment_w + separation * fp.separation_w;
         }
 
-        //obstacle avoidance with priority over flocking
+        // obstacle avoidance with priority over flocking
         vec3 total(0, 0, 0);
-        if (world) {
+        if (world)
+        {
             total = limit_length(avoid_obstacles(p, *world, fp) * fp.avoid_w, fp.max_force);
         }
 
         double remaining = fp.max_force - total.length();
-        if (remaining > 0) {
+        if (remaining > 0)
+        {
             total = total + limit_length(flock, remaining);
         }
 
