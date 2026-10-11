@@ -5,6 +5,8 @@
 #include "quaternion.h"
 #include <array>
 
+#define tolerance 1e-4
+
 class tri : public hittable
 {
 public:
@@ -130,6 +132,21 @@ public:
 
         point3 min_point(min_x, min_y, min_z);
         point3 max_point(max_x, max_y, max_z);
+        if (max_x - min_x < tolerance)
+        {
+            min_x -= tolerance * 0.5;
+            max_x += tolerance * 0.5;
+        }
+        if (max_y - min_y < tolerance)
+        {
+            min_y -= tolerance * 0.5;
+            max_y += tolerance * 0.5;
+        }
+        if (max_z - min_z < tolerance)
+        {
+            min_z -= tolerance * 0.5;
+            max_z += tolerance * 0.5;
+        }
 
         return aabb(min_point, max_point);
     }
@@ -174,7 +191,7 @@ public:
         update();
     }
 
-     point3 original_centroid() const
+    point3 original_centroid() const
     {
         return (original_vertices[0] + original_vertices[1] + original_vertices[2]) / 3.0;
     }

@@ -4,6 +4,8 @@
 #include "../hittable.h"
 #include "../physics/objects/particle.h"
 
+#define DEBUG false // this is to debug bvh
+
 class particle_mesh_container : public hittable
 {
 public:
@@ -11,15 +13,15 @@ public:
     hittable_list local_world;
 
     particle_mesh_container(std::vector<particle> &particles,
-                          const std::string &file_name,   //mesh_container or mesh_container_bvh
-                          shared_ptr<material> override_mat,
+                            const std::string &file_name,
+                            shared_ptr<material> override_mat,
                             double scale = 1.0)
         : particles(&particles), scale(scale), override_mat(override_mat)
     {
         mesh_container = make_shared<mesh>(file_name, override_mat, local_world);
 
         if (local_world.objects.empty())
-        throw std::runtime_error("particle_mesh_container: no triangles loaded from " + file_name);
+            throw std::runtime_error("particle_mesh_container: no triangles loaded from " + file_name);
 
         create_local_box();
         create_bvh();
@@ -33,34 +35,57 @@ public:
 
         for (const particle &p : *particles)
         {
-            if (!p.alive) {
+            if (!p.alive)
+            {
                 continue;
             }
 
             // World -> local. Direction is scaled but NOT normalized,
             // so t means the same thing in both spaces.
             ray local_r((r.origin() - p.position) * inv_s,
-                        r.direction() * inv_s);               // drop r.time() if your ray has no time
+                        r.direction() * inv_s);
 
             hit_record temp_rec;
-            if (mesh_bvh->hit(local_r, interval(ray_t.min, closest_so_far), temp_rec))
+            if (DEBUG)
             {
-                // Local -> world
-                temp_rec.t = temp_rec.t;                 // unchanged by construction
-                temp_rec.p = r.at(temp_rec.t);           // recompute in world space
-                if (override_mat)
-                    temp_rec.mat = override_mat;
+                for (int i = 0; i < local_world.objects.size(); i++) // bvh is messing it up, this fixes it.
+                {
+                    if (local_world.objects[i]->hit(local_r, interval(ray_t.min, closest_so_far), temp_rec)) // this was mesh_bvh instead of local_world.objects[i]
+                    {
+                        // Local -> world
+                        temp_rec.t = temp_rec.t;       // unchanged by construction
+                        temp_rec.p = r.at(temp_rec.t); // recompute in world space
+                        if (override_mat)
+                            temp_rec.mat = override_mat;
 
-                hit_anything = true;
-                closest_so_far = temp_rec.t;
-                rec = temp_rec;
+                        hit_anything = true;
+                        closest_so_far = temp_rec.t;
+                        rec = temp_rec;
+                    }
+                }
+            }
+            else
+            {
+                if (mesh_bvh->hit(local_r, interval(ray_t.min, closest_so_far), temp_rec)) // this was mesh_bvh instead of local_world.objects[i]
+                {
+                    // Local -> world
+                    temp_rec.t = temp_rec.t;       // unchanged by construction
+                    temp_rec.p = r.at(temp_rec.t); // recompute in world space
+                    if (override_mat)
+                        temp_rec.mat = override_mat;
+
+                    hit_anything = true;
+                    closest_so_far = temp_rec.t;
+                    rec = temp_rec;
+                }
             }
         }
         return hit_anything;
     }
 
-    void create_bvh(){
-        mesh_bvh = make_shared<bvh_node>(local_world.objects, 0,local_world.objects.size());
+    void create_bvh()
+    {
+        mesh_bvh = make_shared<bvh_node>(local_world.objects, 0, local_world.objects.size());
     }
 
     aabb bounding_box() const override
@@ -85,10 +110,11 @@ public:
 
     void position(vec3 &pos) override {}
 
-    void create_local_box(){
+    void create_local_box()
+    {
         aabb box = local_world.objects[0]->bounding_box();
 
-        for (size_t i = 1; i < local_world.objects.size(); i++)
+        for (size_t i = 1; i < local_world.objects.size(); i++) // can be int too
         {
             box = surrounding_box(
                 box,

@@ -4,6 +4,8 @@
 #include "../hittable.h"
 #include <array>
 
+#define tolerance 1e-4 // can change
+
 class phy_tri : public phy_hittable
 {
 public:
@@ -85,10 +87,23 @@ public:
         double max_y = std::max({vertices[0].y(), vertices[1].y(), vertices[2].y()});
         double max_z = std::max({vertices[0].z(), vertices[1].z(), vertices[2].z()});
 
-        point3 min_point(min_x, min_y, min_z);
-        point3 max_point(max_x, max_y, max_z);
+        if (max_x - min_x < tolerance)
+        {
+            min_x -= tolerance * 0.5;
+            max_x += tolerance * 0.5;
+        }
+        if (max_y - min_y < tolerance)
+        {
+            min_y -= tolerance * 0.5;
+            max_y += tolerance * 0.5;
+        }
+        if (max_z - min_z < tolerance)
+        {
+            min_z -= tolerance * 0.5;
+            max_z += tolerance * 0.5;
+        }
 
-        return phy_aabb(min_point, max_point);
+        return phy_aabb(point3(min_x, min_y, min_z), point3(max_x, max_y, max_z));
     }
 
     vec3 bay_coordinate(double u, double v) const

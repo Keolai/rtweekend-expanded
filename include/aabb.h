@@ -4,6 +4,8 @@
 #include "interval.h"
 #include "ray.h"
 
+#define tolerance 1e-4
+
 class aabb
 {
 public:
@@ -16,7 +18,7 @@ public:
     aabb(const interval &x,
          const interval &y,
          const interval &z)
-        : x(x), y(y), z(z) {}
+        : x(x), y(y), z(z) { pad_to_minimums(); }
 
     // Construct from two corner points
     aabb(const point3 &a, const point3 &b)
@@ -32,6 +34,7 @@ public:
         z = interval(
             fmin(a.z(), b.z()),
             fmax(a.z(), b.z()));
+        pad_to_minimums();
     }
 
     // Access axis interval
@@ -72,6 +75,26 @@ public:
         }
 
         return true;
+    }
+
+private:
+    void pad_to_minimums()
+    {
+        if (x.max - x.min < tolerance)
+        {
+            x.min -= tolerance / 2;
+            x.max += tolerance / 2;
+        }
+        if (y.max - y.min < tolerance)
+        {
+            y.min -= tolerance / 2;
+            y.max += tolerance / 2;
+        }
+        if (z.max - z.min < tolerance)
+        {
+            z.min -= tolerance / 2;
+            z.max += tolerance / 2;
+        }
     }
 };
 
