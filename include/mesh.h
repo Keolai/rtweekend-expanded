@@ -22,6 +22,8 @@ class mesh
 {
 public:
     int id = -1;
+    std::vector<std::shared_ptr<tri>> triangles;
+    
     mesh() {}
 
     mesh(const std::string &file_path,
@@ -199,7 +201,6 @@ public:
     }
 
 private:
-    std::vector<std::shared_ptr<tri>> triangles;
     point3 pivot;
 
     face_vertex parse_face_index(

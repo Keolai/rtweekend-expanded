@@ -11,6 +11,7 @@
 #include "include/window.h"
 #include "include/particle_containers/particle_container.h"
 #include "include/particle_containers/metaball.h"
+#include "include/particle_containers/particle_mesh.h"
 
 #include "include/physics_layer.h"
 
@@ -206,15 +207,16 @@ int main()
 
     //bowl
     auto bowl_Model = std::make_shared<mesh>("models/bowl.obj", tex_mat, world); //this is to check stuff
-    bowl_Model->rotate(vec3(30,20,0));
     int bowl_physics = sim.add_mesh_to_world("models/bowl.obj",true);
     sim.connect_objects(bowl_Model->id,bowl_physics);
 
     
     //PARAMETERS=(const vec3 &position, const vec3 &direction, double spread, double speed, double flow, bool is_flock)
-    particle_emitter& emitter = sim.add_particle_emitter(vec3(0,4,0),vec3(0,-1,0),0.2,1,500,true);
-    emitter.behavior = emitter_behavior::fluid; //haha
-    auto vis_emitter = std::make_shared<metaball>(emitter.particles,smile_mat, 0.2);
+    particle_emitter& emitter = sim.add_particle_emitter(vec3(0,4,0),vec3(0,-1,0),0.2,1,1,true);
+    emitter.behavior = emitter_behavior::flocking;
+   // auto vis_emitter = std::make_shared<metaball>(emitter.particles,smile_mat, 0.2);
+ 
+    auto vis_emitter = std::make_shared<particle_mesh_container>(emitter.particles, "models/cube.obj", cube_mat);
     world.add(vis_emitter);
 
     // particle_emitter& sec_emitter = sim.add_particle_emitter(vec3(0.5,4,0),vec3(0,-1,0),1,1,20);
@@ -249,7 +251,7 @@ int main()
     cam.max_depth = 25;
 
     cam.vfov = 70;
-    cam.lookfrom = point3(0, 3, 2); // 0 5 10 default
+    cam.lookfrom = point3(4, 3, 2); // 0 5 10 default
     cam.lookat = point3(0, 0, 0);
     cam.vup = vec3(0, 1, 0);
     cam.ambient = color(0.1);
