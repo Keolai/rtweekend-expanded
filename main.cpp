@@ -25,8 +25,8 @@
 
 #define SIM_RATE_MS 33 //interval
 
-#define RECORDING false
-#define MAX_RECORDING_STEPS 500
+#define RECORDING true
+#define MAX_RECORDING_STEPS 400
 
 std::atomic<bool> running{true};
 std::mutex state_mutex;
@@ -186,6 +186,7 @@ int main()
     auto cube_mat = make_shared<lambertian>(color(0.5, 0.5, 0.5)); // world material
     auto em = make_shared<emmissive>(color(0.5));
     auto tex_mat = make_shared<metal>("models/textures/checkered.ppm", 0.1);
+    auto ufo_mat = make_shared<lambertian>("models/textures/ufo_tex.ppm");
 
     auto smile_mat = make_shared<lambertian>("models/textures/smiles.ppm");
 
@@ -212,11 +213,11 @@ int main()
 
     
     //PARAMETERS=(const vec3 &position, const vec3 &direction, double spread, double speed, double flow, bool is_flock)
-    particle_emitter& emitter = sim.add_particle_emitter(vec3(0,4,0),vec3(0,-1,0),0.2,1,1,true);
+    particle_emitter& emitter = sim.add_particle_emitter(vec3(0,4,0),vec3(0,-1,0),0.1,1,500,true);
     emitter.behavior = emitter_behavior::flocking;
-   // auto vis_emitter = std::make_shared<metaball>(emitter.particles,smile_mat, 0.2);
+    auto vis_emitter = std::make_shared<metaball>(emitter.particles,smile_mat, 0.1);
  
-    auto vis_emitter = std::make_shared<particle_mesh_container>(emitter.particles, "models/cube.obj", cube_mat);
+    //auto vis_emitter = std::make_shared<particle_mesh_container>(emitter.particles, "models/ufo.obj", ufo_mat, 0.30);
     world.add(vis_emitter);
 
     // particle_emitter& sec_emitter = sim.add_particle_emitter(vec3(0.5,4,0),vec3(0,-1,0),1,1,20);
@@ -251,7 +252,7 @@ int main()
     cam.max_depth = 25;
 
     cam.vfov = 70;
-    cam.lookfrom = point3(4, 3, 2); // 0 5 10 default
+    cam.lookfrom = point3(0, 4, 2); // 0 5 10 default
     cam.lookat = point3(0, 0, 0);
     cam.vup = vec3(0, 1, 0);
     cam.ambient = color(0.1);

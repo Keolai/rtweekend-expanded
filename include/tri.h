@@ -204,6 +204,12 @@ public:
         update();
     }
 
+    void set_orientation(const quat &q)
+    {
+        orientation = q.normalized();
+        update();
+    }
+
     point3 original_centroid() const
     {
         return (original_vertices[0] + original_vertices[1] + original_vertices[2]) / 3.0;

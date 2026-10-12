@@ -202,9 +202,29 @@ public:
 
     void set_rotation(const vec3 &degrees)
     {
-        for (auto &t : triangles) {
+        for (auto &t : triangles)
+        {
             t->set_rotation(degrees);
         }
+    }
+
+    void face_direction(const vec3 &velocity, const vec3 &model_forward = vec3(0, 0, 1))
+    {
+        if (velocity.length_squared() < 1e-12)
+        {
+            return; // TOO SMALL!!!!
+        }
+
+        quat q = quat::from_to(model_forward, velocity);
+        for (auto &t : triangles)
+        {
+            t->set_orientation(q);
+        }
+    }
+
+    point3 get_pivot()
+    {
+        return pivot;
     }
 
 private:

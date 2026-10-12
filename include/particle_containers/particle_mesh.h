@@ -4,7 +4,7 @@
 #include "../hittable.h"
 #include "../physics/objects/particle.h"
 
-#define DEBUG false // this is to debug bvh
+#define DEBUG true // this is to debug bvh
 
 class particle_mesh_container : public hittable
 {
@@ -39,24 +39,27 @@ public:
             {
                 continue;
             }
+            
+            mesh_container->face_direction(p.velocity); //YUCK!!!
 
-            // World -> local. Direction is scaled but NOT normalized,
-            // so t means the same thing in both spaces.
+
+            // world -> local, direction is scaled but NOT normalized
             ray local_r((r.origin() - p.position) * inv_s,
                         r.direction() * inv_s);
 
             hit_record temp_rec;
-            if (DEBUG)
+            if (DEBUG) //this needs to be on to allow for rotation NEED TO FIX
             {
                 for (int i = 0; i < local_world.objects.size(); i++) // bvh is messing it up, this fixes it.
                 {
                     if (local_world.objects[i]->hit(local_r, interval(ray_t.min, closest_so_far), temp_rec)) // this was mesh_bvh instead of local_world.objects[i]
                     {
-                        // Local -> world
+                        // local -> world
                         temp_rec.t = temp_rec.t;       // unchanged by construction
                         temp_rec.p = r.at(temp_rec.t); // recompute in world space
-                        if (override_mat)
+                        if (override_mat){
                             temp_rec.mat = override_mat;
+                        }
 
                         hit_anything = true;
                         closest_so_far = temp_rec.t;
@@ -66,13 +69,14 @@ public:
             }
             else
             {
-                if (mesh_bvh->hit(local_r, interval(ray_t.min, closest_so_far), temp_rec)) // this was mesh_bvh instead of local_world.objects[i]
+                if (mesh_bvh->hit(local_r, interval(ray_t.min, closest_so_far), temp_rec))
                 {
-                    // Local -> world
+                    // local -> world
                     temp_rec.t = temp_rec.t;       // unchanged by construction
                     temp_rec.p = r.at(temp_rec.t); // recompute in world space
-                    if (override_mat)
+                    if (override_mat) {
                         temp_rec.mat = override_mat;
+                    }
 
                     hit_anything = true;
                     closest_so_far = temp_rec.t;

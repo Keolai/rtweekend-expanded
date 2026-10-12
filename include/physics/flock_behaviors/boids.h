@@ -20,7 +20,7 @@ inline vec3 limit_length(const vec3 &v, double max_len)
     return v;
 }
 
-// Reynolds-style steering
+// reynolds-style steering
 inline vec3 steer_toward(const vec3 &desired_dir, const vec3 &velocity, const flock_params &fp)
 {
     double l2 = desired_dir.length_squared();
@@ -32,7 +32,7 @@ inline vec3 steer_toward(const vec3 &desired_dir, const vec3 &velocity, const fl
     return limit_length(desired_velocity - velocity, fp.max_force);
 }
 
-// Soft obstacle avoidance, uses feeler ray
+// soft obstacle avoidance, uses feeler ray
 inline vec3 avoid_obstacles(const particle &p, phy_hittable &world, const flock_params &fp)
 {
     double speed = p.velocity.length();
@@ -58,8 +58,7 @@ inline vec3 avoid_obstacles(const particle &p, phy_hittable &world, const flock_
         n = -n; // make sure the normal points back toward us, whatever the hit record's convention
     }
 
-    // Slide along the surface instead of just braking: aim away from the surface while
-    // keeping the sideways part of motion
+    // slide along the surface instead of just braking: aim away from the surface while keeping sideways motion
     vec3 tangent = dir - n * dot(dir, n);
     if (tangent.length_squared() < TOO_SMALL)
     {
