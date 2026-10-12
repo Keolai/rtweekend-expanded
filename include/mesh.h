@@ -23,7 +23,7 @@ class mesh
 public:
     int id = -1;
     std::vector<std::shared_ptr<tri>> triangles;
-    
+
     mesh() {}
 
     mesh(const std::string &file_path,
@@ -197,6 +197,13 @@ public:
         for (auto &t : triangles)
         {
             t->rotate(degrees);
+        }
+    }
+
+    void set_rotation(const vec3 &degrees)
+    {
+        for (auto &t : triangles) {
+            t->set_rotation(degrees);
         }
     }
 

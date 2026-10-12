@@ -191,6 +191,19 @@ public:
         update();
     }
 
+    void set_rotation(const vec3 &degrees)
+    {
+        orientation = quat::from_euler(degrees).normalized();
+        update();
+    }
+
+    void reset_rotation()
+    {
+        // identity
+        orientation = quat();
+        update();
+    }
+
     point3 original_centroid() const
     {
         return (original_vertices[0] + original_vertices[1] + original_vertices[2]) / 3.0;
