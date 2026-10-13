@@ -35,7 +35,7 @@ public:
         }
  
         const double r2 = radius * radius;
-        //iterative traversal
+        //iterative traversal ok
         int stack[64];
         int top = 0;
         stack[top++] = 0; // root
@@ -136,7 +136,7 @@ private:
                          [axis](const ref &a, const ref &b)
                          { return a.position[axis] < b.position[axis]; });
 
-        //nodes may reallocate after recursing, dont hold reference or pointers to them
+        //nodes may reallocate after recursing, dont hold reference or pointers to them!
         const int l = build_recursive(start, mid);
         const int r = build_recursive(mid, end);
         nodes[idx].left = l;

@@ -56,6 +56,7 @@ inline double estimate_rest_density(double h, double spacing, double mass)
 }
 
 // one acceleration per particle (zero for dead particles), only reads pos and velocity
+// https://en.wikipedia.org/wiki/Smoothed-particle_hydrodynamics
 template <typename Params>
 inline void compute_sph_accel(const std::vector<particle> &particles,
                               particle_bvh &bvh,
