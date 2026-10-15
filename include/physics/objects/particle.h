@@ -5,7 +5,7 @@
 #include <random>
 #include <vector>
 
-#define DEFAULT_MAX 1000
+#define DEFAULT_MAX 3000
 
 struct flock_params
 {
