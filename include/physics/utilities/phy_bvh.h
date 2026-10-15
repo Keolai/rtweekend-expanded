@@ -69,7 +69,7 @@ public:
  
                 left = l;
                 right = r;
-                left_node = l.get();   // remembered so refit() needs no dynamic_cast
+                left_node = l.get();   // remembered so refit needs no dynamic_cast
                 right_node = r.get();
             }
         }
@@ -115,12 +115,9 @@ public:
         return bbox;
     }
  
-    // A BVH node has no state of its own; update the leaf objects, then call refit().
+
     void update_state() override {}
  
-    // The functions below only make sense for an actual body. rec.hit_object always
-    // points at a leaf object, never at a BVH node, so these should never be called.
-    // They assert in debug builds so a mistaken call is loud instead of silently wrong.
     double hit_adjuster() const override
     {
         assert(false && "phy_bvh_node::hit_adjuster called; use rec.hit_object instead");

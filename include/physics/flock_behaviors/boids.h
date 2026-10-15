@@ -10,6 +10,8 @@
 
 #define TOO_SMALL 1e-6
 
+//https://www.red3d.com/cwr/papers/1987/SIGGRAPH87.pdf <- birdoids yay
+
 inline vec3 limit_length(const vec3 &v, double max_len)
 {
     double l2 = v.length_squared();
@@ -20,7 +22,6 @@ inline vec3 limit_length(const vec3 &v, double max_len)
     return v;
 }
 
-// reynolds-style steering
 inline vec3 steer_toward(const vec3 &desired_dir, const vec3 &velocity, const flock_params &fp)
 {
     double l2 = desired_dir.length_squared();
@@ -50,7 +51,7 @@ inline vec3 avoid_obstacles(const particle &p, phy_hittable &world, const flock_
         return vec3(0, 0, 0);
     }
 
-    double urgency = 1.0 - rec.t / look; // 0 at the tip of the feeler  1 at contact
+    double urgency = 1.0 - rec.t / look;
 
     vec3 n = rec.normal;
     if (dot(n, dir) > 0)
