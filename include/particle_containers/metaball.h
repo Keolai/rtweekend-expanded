@@ -17,10 +17,16 @@ public:
     // radius: how big a lone, isolated particle appears
     // threshold: iso-level of the surface, in (0, 1), smaller == gooier
     metaball(std::vector<particle> &particles, shared_ptr<material> mat, double radius, double threshold = 0.4)
-        : particles(&particles), mat(mat), particle_radius(radius), threshold(threshold)
+        : particles(&particles), mat(mat), second_mat(mat), particle_radius(radius), threshold(threshold)
     {
-        // Choose the influence radius R so that a single particle's surface lands at radius
-        // (1 - r^2/R^2)^3 = threshold   =>   R = r / sqrt(1 - cbrt(threshold))
+        influence_radius = radius / std::sqrt(1.0 - std::cbrt(threshold));
+        R2 = influence_radius * influence_radius;
+        inv_R2 = 1.0 / R2;
+    }
+
+     metaball(std::vector<particle> &particles, shared_ptr<material> mat, shared_ptr<material> second_mat, double radius, double threshold = 0.4)
+        : particles(&particles), mat(mat), second_mat(second_mat), particle_radius(radius), threshold(threshold)
+    {
         influence_radius = radius / std::sqrt(1.0 - std::cbrt(threshold));
         R2 = influence_radius * influence_radius;
         inv_R2 = 1.0 / R2;
@@ -197,6 +203,7 @@ public:
 
 private:
     shared_ptr<material> mat;
+    shared_ptr<material> second_mat;
     double particle_radius;
     double threshold;
     double influence_radius = 0.0;

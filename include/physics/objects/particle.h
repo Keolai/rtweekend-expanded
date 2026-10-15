@@ -29,6 +29,10 @@ struct flock_params
     double particle_mass = 1.0;
     double max_accel = 200.0;
 
+    int gross_particles = 30;
+    double gross_avoidance = 4.0;      //how far away to stay from the icky neighbor
+    double gross_weight = 6.0;
+
     bool use_bvh = true; // seems to increase performance 25% on lower counts, higher/more spread out should be more
 };
 
@@ -39,12 +43,14 @@ struct particle
     double lifespan; // remaining seconds, but can do ticks idk
     double age = 0.0;
     bool alive = false;
+    bool is_gross = false; //ewwwww 
 };
 
 enum class emitter_behavior
 {
     flocking,
-    fluid
+    fluid,
+    gross
 };
 
 class particle_emitter
@@ -116,6 +122,9 @@ public:
                 if (to_spawn > 0)
                 {
                     spawn(cur_particle);
+                    if (i < flock.gross_particles){
+                        cur_particle.is_gross = true; //should only set for the same particles
+                    }
                     to_spawn--;
                     accumulator -= 1.0;
                 }

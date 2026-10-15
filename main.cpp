@@ -26,7 +26,7 @@
 #define SIM_RATE_MS 33 //interval
 
 #define RECORDING true
-#define MAX_RECORDING_STEPS 1000
+#define MAX_RECORDING_STEPS 750
 
 std::atomic<bool> running{true};
 std::mutex state_mutex;
@@ -197,9 +197,6 @@ int main()
     sim.add_vortex_force(vec3(0),vec3(0,1,0),5);
     sim.add_range_force(vec3(0),2,10);
 
-     sim.add_vortex_force(vec3(3),vec3(0,0,1),3);
-    sim.add_range_force(vec3(3),5,5);
-
     // mesh teapot_Model = mesh("models/solid_teapot.obj", tex_mat, world); //this is to check stuff
     // int tea_physics = sim.add_mesh_to_world("models/solid_teapot.obj",true);
 
@@ -224,9 +221,9 @@ int main()
     // auto vis_emitter = std::make_shared<metaball>(emitter.particles,smile_mat, 0.1);
 
     //PREDATOR/PREY DEMO
-    particle_emitter& emitter = sim.add_particle_emitter(vec3(7,1,0),vec3(-1,0,0),0.5,1,500,true);
-    emitter.behavior = emitter_behavior::flocking;
-    auto vis_emitter = std::make_shared<metaball>(emitter.particles,smile_mat, 0.2);
+    particle_emitter& emitter = sim.add_particle_emitter(vec3(-7,1,0),vec3(1,0,0),0.5,1,500,true);
+    emitter.behavior = emitter_behavior::gross;
+    auto vis_emitter = std::make_shared<particle_container>(emitter.particles,smile_mat, second_mat, 0.2);
  
     //auto vis_emitter = std::make_shared<particle_mesh_container>(emitter.particles, "models/ufo.obj", ufo_mat, 0.30);
     world.add(vis_emitter);
@@ -263,7 +260,7 @@ int main()
     cam.max_depth = 25;
 
     cam.vfov = 70;
-    cam.lookfrom = point3(7, 2, 1); // 0 5 10 default
+    cam.lookfrom = point3(5, 2, 1); // 0 5 10 default
     cam.lookat = point3(0, 0, 0);
     cam.vup = vec3(0, 1, 0);
     cam.ambient = color(0.1);

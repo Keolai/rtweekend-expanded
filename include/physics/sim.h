@@ -13,6 +13,7 @@
 
 #include "flock_behaviors/boids.h"
 #include "flock_behaviors/sph.h"
+#include "flock_behaviors/gross.h"
 
 #include <map>           // Required for std::map
 #include <unordered_map> // Required for std::unordered_map
@@ -466,6 +467,9 @@ private:
             break;
         case emitter_behavior::fluid:
             compute_sph_accel(cur_emitter.particles, neighbor_bvh, cur_emitter.flock, fluid_scratch, steering);
+            break;
+        case emitter_behavior::gross:
+            compute_gross_steering(cur_emitter.particles, neighbor_bvh, cur_emitter.flock, steering, world_bvh.get());
             break;
         default:
             break; //ehh

@@ -10,7 +10,9 @@ class particle_container : public hittable
 public:
     std::vector<particle> *particles;
     particle_container(std::vector<particle> &particles, shared_ptr<material> mat, double radius)
-        : particles(&particles), mat(mat), particle_radius(radius) {}
+        : particles(&particles), mat(mat), second_mat(mat), particle_radius(radius) {}
+    particle_container(std::vector<particle> &particles, shared_ptr<material> mat, shared_ptr<material> second_mat, double radius)
+        : particles(&particles), mat(mat), second_mat(second_mat), particle_radius(radius) {}
 
     bool hit(const ray &r, interval ray_t, hit_record &rec) const override
     {
@@ -30,6 +32,9 @@ public:
                 hit_anything = true;
                 closest_so_far = temp_rec.t;
                 rec = temp_rec;
+                if (p.is_gross){
+                    rec.mat = second_mat;
+                }
             }
         }
         return hit_anything;
@@ -71,6 +76,7 @@ public:
 private:
     //std::vector<sphere> spheres;
     shared_ptr<material> mat;
+     shared_ptr<material> second_mat;
     double particle_radius;
 
     bool sphere_hit(const ray &r, const vec3 &position, double radius, interval ray_t, hit_record &rec) const
