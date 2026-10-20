@@ -6,18 +6,15 @@
 #include <limits>
 #include <vector>
 
-#include "../hittable.h"
-#include "../physics/objects/particle.h"
+#include "particle_hittable.h"
 
-class metaball : public hittable
+class metaball : public particle_hittable
 {
 public:
-    std::vector<particle> *particles;
-
     // radius: how big a lone, isolated particle appears
     // threshold: iso-level of the surface, in (0, 1), smaller == gooier
     metaball(std::vector<particle> &particles, shared_ptr<material> mat, double radius, double threshold = 0.4)
-        : particles(&particles), mat(mat), second_mat(mat), particle_radius(radius), threshold(threshold)
+        : particle_hittable(particles), mat(mat), second_mat(mat), particle_radius(radius), threshold(threshold)
     {
         influence_radius = radius / std::sqrt(1.0 - std::cbrt(threshold));
         R2 = influence_radius * influence_radius;
@@ -25,7 +22,7 @@ public:
     }
 
      metaball(std::vector<particle> &particles, shared_ptr<material> mat, shared_ptr<material> second_mat, double radius, double threshold = 0.4)
-        : particles(&particles), mat(mat), second_mat(second_mat), particle_radius(radius), threshold(threshold)
+        : particle_hittable(particles), mat(mat), second_mat(second_mat), particle_radius(radius), threshold(threshold)
     {
         influence_radius = radius / std::sqrt(1.0 - std::cbrt(threshold));
         R2 = influence_radius * influence_radius;
@@ -47,20 +44,15 @@ public:
         double t_lo = std::numeric_limits<double>::infinity();
         double t_hi = -t_lo;
 
-        for (const particle &p : *particles)
+        auto visit = [&](int, const vec3 &position)
         {
-            if (!p.alive)
-            {
-                continue; // skip if dead
-            }
-
-            vec3 oc = p.position - O;
+            vec3 oc = position - O;
             double h = dot(D, oc);
             double c = oc.length_squared() - R2;
             double disc = h * h - a * c;
             if (disc < 0)
             {
-                continue;
+                return;
             }
 
             double sq = std::sqrt(disc);
@@ -68,13 +60,14 @@ public:
             double t1 = std::min((h + sq) / a, ray_t.max);
             if (t0 >= t1)
             {
-                continue;
+                return;
             }
 
-            nearby.push_back(p.position);
+            nearby.push_back(position);
             t_lo = std::min(t_lo, t0);
             t_hi = std::max(t_hi, t1);
-        }
+        };
+        bvh.query_ray(r, ray_t, influence_radius, visit);
         if (nearby.empty())
         {
             return false; // no particles near
@@ -169,37 +162,8 @@ public:
         return true;
     }
 
-    aabb bounding_box() const override
-    {
-        aabb box;
-        bool first = true;
-        vec3 rvec(influence_radius, influence_radius, influence_radius);
-
-        for (const particle &p : *particles)
-        {
-            if (!p.alive)
-            {
-                continue;
-            }
-
-            aabb particle_box(p.position - rvec, p.position + rvec);
-            if (first)
-            {
-                box = particle_box;
-                first = false;
-            }
-            else
-            {
-                box = surrounding_box(box, particle_box);
-            }
-        }
-        return box;
-    }
-
-    void position(vec3 &pos) override
-    {
-        // do nothing
-    }
+protected:
+    double bound_radius() const override { return influence_radius; }
 
 private:
     shared_ptr<material> mat;

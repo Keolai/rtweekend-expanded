@@ -65,6 +65,86 @@ public:
         }
     }
  
+    // Calls visit(index, position) for particles in leaves whose box, padded by pad, the ray overlaps.
+    // ray_t is re-read at every node, so visit may shrink the caller's ray_t.max to cull farther nodes.
+    template <typename F>
+    void query_ray(const ray &r, const interval &ray_t, double pad, F visit) const
+    {
+        if (nodes.empty())
+        {
+            return;
+        }
+
+        const vec3 orig = r.origin();
+        const vec3 dir = r.direction();
+        const vec3 inv_dir(1.0 / dir.x(), 1.0 / dir.y(), 1.0 / dir.z());
+        const vec3 pad_vec(pad, pad, pad);
+
+        int stack[64];
+        int top = 0;
+        stack[top++] = 0;
+
+        while (top > 0)
+        {
+            const node &nd = nodes[stack[--top]];
+            double t_enter;
+            if (!ray_box(orig, inv_dir, nd.lo - pad_vec, nd.hi + pad_vec, ray_t, t_enter))
+            {
+                continue;
+            }
+
+            if (nd.left < 0)
+            {
+                for (int k = nd.start; k < nd.start + nd.count; k++)
+                {
+                    visit(refs[k].index, refs[k].position);
+                }
+                continue;
+            }
+
+            const node &l = nodes[nd.left];
+            const node &rt = nodes[nd.right];
+            double t_left, t_right;
+            bool hit_left = ray_box(orig, inv_dir, l.lo - pad_vec, l.hi + pad_vec, ray_t, t_left);
+            bool hit_right = ray_box(orig, inv_dir, rt.lo - pad_vec, rt.hi + pad_vec, ray_t, t_right);
+
+            // push the far child first so the near one is visited first
+            if (hit_left && hit_right)
+            {
+                if (t_left < t_right)
+                {
+                    stack[top++] = nd.right;
+                    stack[top++] = nd.left;
+                }
+                else
+                {
+                    stack[top++] = nd.left;
+                    stack[top++] = nd.right;
+                }
+            }
+            else if (hit_left)
+            {
+                stack[top++] = nd.left;
+            }
+            else if (hit_right)
+            {
+                stack[top++] = nd.right;
+            }
+        }
+    }
+
+    // Bounds of all alive particle centers, false if the tree is empty
+    bool bounds(vec3 &lo, vec3 &hi) const
+    {
+        if (nodes.empty())
+        {
+            return false;
+        }
+        lo = nodes[0].lo;
+        hi = nodes[0].hi;
+        return true;
+    }
+
     size_t size() const { return refs.size(); } // number of alive particles in the tree
  
 private:
@@ -144,6 +224,36 @@ private:
         return idx;
     }
  
+    static bool ray_box(const vec3 &orig, const vec3 &inv_dir, const vec3 &lo, const vec3 &hi,
+                        const interval &ray_t, double &t_enter)
+    {
+        double t_min = ray_t.min;
+        double t_max = ray_t.max;
+        for (int a = 0; a < 3; a++)
+        {
+            double t0 = (lo[a] - orig[a]) * inv_dir[a];
+            double t1 = (hi[a] - orig[a]) * inv_dir[a];
+            if (t0 > t1)
+            {
+                std::swap(t0, t1);
+            }
+            if (t0 > t_min)
+            {
+                t_min = t0;
+            }
+            if (t1 < t_max)
+            {
+                t_max = t1;
+            }
+            if (t_max < t_min)
+            {
+                return false;
+            }
+        }
+        t_enter = t_min;
+        return true;
+    }
+
     // Squared distance from p to node's box, 0 if inside
     static double box_dist_sq(const vec3 &p, const node &nd)
     {

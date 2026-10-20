@@ -1,77 +1,42 @@
 #ifndef PARTICLE_CONTAINER_H
 #define PARTICLE_CONTAINER_H
 
-#include "../hittable.h"
+#include "particle_hittable.h"
 #include "../sphere.h"
-#include "../physics/objects/particle.h"
 
-class particle_container : public hittable
+class particle_container : public particle_hittable
 {
 public:
-    std::vector<particle> *particles;
     particle_container(std::vector<particle> &particles, shared_ptr<material> mat, double radius)
-        : particles(&particles), mat(mat), second_mat(mat), particle_radius(radius) {}
+        : particle_hittable(particles), mat(mat), second_mat(mat), particle_radius(radius) {}
     particle_container(std::vector<particle> &particles, shared_ptr<material> mat, shared_ptr<material> second_mat, double radius)
-        : particles(&particles), mat(mat), second_mat(second_mat), particle_radius(radius) {}
+        : particle_hittable(particles), mat(mat), second_mat(second_mat), particle_radius(radius) {}
 
     bool hit(const ray &r, interval ray_t, hit_record &rec) const override
     {
         bool hit_anything = false;
-        double closest_so_far = ray_t.max;
+        interval search = ray_t;
 
-        for (int i = 0; i < particles->size(); i++)
+        auto visit = [&](int index, const vec3 &position)
         {
-            const particle &p = (*particles)[i];
-            if (!p.alive)
-                continue;
-
-            // inline sphere-ray intersection using p.position, radius, current closest_so_far
             hit_record temp_rec;
-            if (sphere_hit(r, p.position, particle_radius, interval(ray_t.min, closest_so_far), temp_rec))
+            if (sphere_hit(r, position, particle_radius, search, temp_rec))
             {
                 hit_anything = true;
-                closest_so_far = temp_rec.t;
+                search.max = temp_rec.t;
                 rec = temp_rec;
-                if (p.is_gross){
+                if (snapshot[index].is_gross)
+                {
                     rec.mat = second_mat;
                 }
             }
-        }
+        };
+        bvh.query_ray(r, search, particle_radius, visit);
         return hit_anything;
     }
-    aabb bounding_box() const override
-    {
-        aabb box; // default-constructed, should represent an empty/invalid box per your aabb impl
 
-        bool first = true;
-
-        for (int i = 0; i < particles->size(); i++)
-        {
-            const particle &p = (*particles)[i];
-            if (!p.alive)
-                continue;
-
-            vec3 rvec(particle_radius, particle_radius, particle_radius);
-            aabb particle_box(p.position - rvec, p.position + rvec);
-
-            if (first)
-            {
-                box = particle_box;
-                first = false;
-            }
-            else
-            {
-                box = surrounding_box(box, particle_box); // assuming your aabb has a "surrounding box" ctor
-            }
-        }
-
-        return box;
-    }
-
-    void position(vec3 &pos) override
-    {
-        // do nothing
-    }
+protected:
+    double bound_radius() const override { return particle_radius; }
 
 private:
     //std::vector<sphere> spheres;

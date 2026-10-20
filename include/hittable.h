@@ -47,6 +47,8 @@ public:
   virtual aabb bounding_box() const = 0;
   int id = -1;
   virtual void position(vec3 &pos) = 0;
+  // Called once per frame under the physics lock, before the scene BVH is rebuilt
+  virtual void refresh() {}
 
   virtual bool hit(const ray &r, interval ray_t, hit_record &rec) const = 0;
 

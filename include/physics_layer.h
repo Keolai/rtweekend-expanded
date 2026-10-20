@@ -124,6 +124,7 @@ public:
         std::lock_guard<std::mutex> lock(state_mutex_);
         for(int i = 0; i < render_world.objects.size(); i++){
             auto cur_render_object = render_world.objects[i];
+            cur_render_object->refresh();
             int cur_render_id = cur_render_object->id;
             int cur_physics_id = idMap[cur_render_id];
              //printf("render id %d -> physics id %d\n", cur_render_id, cur_physics_id);

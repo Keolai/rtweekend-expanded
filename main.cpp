@@ -25,7 +25,7 @@
 
 #define SIM_RATE_MS 33 //interval
 
-#define RECORDING true
+#define RECORDING false
 #define MAX_RECORDING_STEPS 500
 
 std::atomic<bool> running{true};
@@ -222,7 +222,7 @@ int main()
 
     //PREDATOR/PREY DEMO
     particle_emitter& emitter = sim.add_particle_emitter(vec3(0,4,0),vec3(0,-1,0),0,1,500,true);
-    emitter.behavior = emitter_behavior::gross;
+    emitter.behavior = emitter_behavior::fluid;
     auto vis_emitter = std::make_shared<particle_container>(emitter.particles,smile_mat, second_mat, 0.2);
  
     //auto vis_emitter = std::make_shared<particle_mesh_container>(emitter.particles, "models/ufo.obj", ufo_mat, 0.30);
@@ -316,8 +316,8 @@ int main()
         {
             // printf("running!\n");
             sim.step(SIM_RATE_MS);
-            world_bvh->rebuild(world.objects);
             sim.update_render();
+            world_bvh->rebuild(world.objects);
             cam.render(*world_bvh, color_buffer, win);
             write_to_file(cam.image_width, cam.get_height(), sim.get_step());   
             cur_step++;

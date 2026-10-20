@@ -36,6 +36,7 @@ public:
     void render(const hittable &world, std::vector<color> &color_buffer, window &win)
     {
         initialize();
+        int displayed_rows = 0;
 
         for (int j = 0; j < image_height; j += image_resolution)
         {
@@ -62,14 +63,16 @@ public:
             }
             if (j != 0 && j % 10 == 0)
             {
-                if (win.display_color_array(color_buffer))
+                int finished_rows = std::min(j + image_resolution, image_height);
+                if (win.display_color_array(color_buffer, displayed_rows, finished_rows))
                 { // should return if done
                     return;
                 }
+                displayed_rows = finished_rows;
             }
         }
         // std::clog << "\rDone.                 \n";
-        win.display_color_array(color_buffer);
+        win.display_color_array(color_buffer, displayed_rows, image_height);
     }
 
     int get_height()

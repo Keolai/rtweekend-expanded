@@ -53,6 +53,13 @@ public:
             return -1;
         }
 
+        pixel_format = SDL_GetPixelFormatDetails(SDL_PIXELFORMAT_RGBA8888);
+        if (!pixel_format)
+        {
+            SDL_Log("Couldn't get pixel format details: %s", SDL_GetError());
+            return -1;
+        }
+
         SDL_SetRenderLogicalPresentation(
             renderer,
             WINDOW_WIDTH,
@@ -117,42 +124,44 @@ public:
         return app_done;
     }
 
-    bool display_color_array(std::vector<color> &color_buffer)
+    // Converts and uploads rows [row_start, row_end) (row_end < 0 means the last row), then presents.
+    // Returns true if the app should quit.
+    bool display_color_array(const std::vector<color> &color_buffer, int row_start = 0, int row_end = -1)
     {
-        for (int j = 0; j < height; j++)
+        if (poll_for_event())
         {
-            for (int i = 0; i < width; i++)
-            {
-                int index = i + width * j;
-                if (index < color_buffer.size())
-                {
-                    color pixel = norm_to_rgb(color_buffer.at(index));
-
-                    uint8_t red = uint8_t(pixel.x());
-                    uint8_t green = uint8_t(pixel.y());
-                    uint8_t blue = uint8_t(pixel.z());
-                    uint8_t alpha = 255;
-
-                    const SDL_PixelFormatDetails *fmt = SDL_GetPixelFormatDetails(SDL_PIXELFORMAT_RGBA8888);
-                    if (!fmt)
-                    {
-                        printf("SDL_GetPixelFormatDetails returned NULL! SDL error: %s\n", SDL_GetError());
-                    }
-                    pixels[index] = SDL_MapRGBA(fmt, nullptr, red, green, blue, alpha);
-                }
-            }
-            SDL_Event event;
-
-            if (poll_for_event() == true)
-            {
-                return true;
-            }
+            return true;
         }
-        SDL_UpdateTexture(
-            texture,
-            nullptr,
-            pixels.data(),
-            width * sizeof(uint32_t));
+
+        int buffer_rows = int(color_buffer.size()) / width;
+        if (row_end < 0 || row_end > buffer_rows)
+        {
+            row_end = buffer_rows;
+        }
+        if (row_end > height)
+        {
+            row_end = height;
+        }
+        if (row_start < 0)
+        {
+            row_start = 0;
+        }
+
+        if (row_start < row_end)
+        {
+            for (int index = row_start * width; index < row_end * width; index++)
+            {
+                color pixel = norm_to_rgb(color_buffer[index]);
+                pixels[index] = SDL_MapRGBA(pixel_format, nullptr, uint8_t(pixel.x()), uint8_t(pixel.y()), uint8_t(pixel.z()), 255);
+            }
+
+            SDL_Rect rows = {0, row_start, width, row_end - row_start};
+            SDL_UpdateTexture(
+                texture,
+                &rows,
+                pixels.data() + row_start * width,
+                width * sizeof(uint32_t));
+        }
         SDL_RenderClear(renderer);
         SDL_RenderTexture(renderer, texture, nullptr, nullptr);
         win_gui.render(renderer);
@@ -216,6 +225,7 @@ public:
 
 private:
     std::vector<uint32_t> pixels;
+    const SDL_PixelFormatDetails *pixel_format = nullptr;
     int height;
     int width;
     static SDL_Window *sdlwindow;

@@ -122,7 +122,7 @@ public:
                 if (to_spawn > 0)
                 {
                     spawn(cur_particle);
-                    if (i > DEFAULT_MAX - flock.gross_particles){
+                    if (i > DEFAULT_MAX - flock.gross_particles && behavior == emitter_behavior::gross){
                         cur_particle.is_gross = true; //should only set for the same particles
                     }
                     to_spawn--;
