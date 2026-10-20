@@ -59,6 +59,8 @@ public:
             WINDOW_HEIGHT,
             SDL_LOGICAL_PRESENTATION_LETTERBOX);
 
+        SDL_StartTextInput(sdlwindow);
+
         return 0;
     }
 
@@ -97,13 +99,19 @@ public:
 
             if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
             {
-                // printf("%f, %f\n",event.button.x, event.button.y);
+                // window coords -> logical coords, otherwise clicks miss after a resize
+                SDL_ConvertEventToRenderCoordinates(renderer, &event);
                 win_gui.check_for_clicks(event.button.x, event.button.y);
+            }
+
+            if (event.type == SDL_EVENT_TEXT_INPUT)
+            {
+                win_gui.process_text_input(event.text.text);
             }
 
             if (event.type == SDL_EVENT_KEY_DOWN)
             {
-                win_gui.process_text_input(event.key.key);
+                win_gui.process_key(event.key.key);
             }
         }
         return app_done;

@@ -151,59 +151,52 @@ public:
         }
     }
 
-    void process_text_input(SDL_Keycode key)
-    { // take in char or something and process it
-        if (cur_text_index == -1 || !key_is_valid(key))
+    void process_text_input(const char *input)
+    {
+        if (cur_text_index == -1)
         { // no text box is active
             return;
         }
 
         std::string cur_str = text_boxes[cur_text_index]->get_text();
-        cur_str.pop_back();
-        // printf("%c\n", (char)key);
-        if (key == SDLK_ESCAPE)
+        cur_str.pop_back(); // remove cursor
+        // SDL_RenderDebugText only draws ASCII; UTF-8 multibyte bytes are all >= 0x80
+        for (const char *c = input; *c != '\0'; c++)
         {
-            text_boxes[cur_text_index]->set_editing(false);
-            return;
+            if (*c >= 0x20 && *c <= 0x7E)
+            {
+                cur_str += *c;
+            }
         }
-        if (key != SDLK_BACKSPACE)
-        {
-            cur_str += (char)key;
-        }
-        else
-        {
-            cur_str.pop_back();
-        }
-        cur_str += "|";
+        cur_str += CURSOR;
         text_boxes[cur_text_index]->set_text(cur_str);
-        return;
     }
 
-    bool key_is_valid(SDL_Keycode key)
+    void process_key(SDL_Keycode key)
     {
-        // switch (key)
-        // {
-        // case SDLK_0:
-        // case SDLK_1:
-        // case SDLK_2:
-        // case SDLK_3:
-        // case SDLK_4:
-        // case SDLK_5:
-        // case SDLK_6:
-        // case SDLK_7:
-        // case SDLK_8:
-        // case SDLK_9:
-        // case SDLK_BACKSPACE:
-        // case SDLK_PERIOD:
-        // case SDLK_ESCAPE:
-        // case SDLK_MINUS:
-        //     return true;
-        //     break;
-        // default:
-        //     return false;
-        //     break;
-        // }
-        return (int) key < 178; //IDK !!
+        if (cur_text_index == -1)
+        {
+            return;
+        }
+
+        if (key == SDLK_ESCAPE || key == SDLK_RETURN || key == SDLK_KP_ENTER)
+        {
+            text_boxes[cur_text_index]->set_editing(false);
+            cur_text_index = -1;
+            return;
+        }
+
+        if (key == SDLK_BACKSPACE)
+        {
+            std::string cur_str = text_boxes[cur_text_index]->get_text();
+            cur_str.pop_back(); // remove cursor
+            if (!cur_str.empty())
+            {
+                cur_str.pop_back();
+            }
+            cur_str += CURSOR;
+            text_boxes[cur_text_index]->set_text(cur_str);
+        }
     }
 };
 
