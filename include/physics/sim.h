@@ -26,6 +26,13 @@
 
 #define MAX_EMITTERS 5
 #define NEIGHBOR_RADIUS 0.5
+#define SOFT_LOG_INTERVAL 10 // steps between soft body energy prints, 0 = off
+
+enum class soft_integrator
+{
+    forward_euler,      // position uses the old velocity, explodes the fastest
+    semi_implicit_euler // velocity first, same order as the rigid body loop
+};
 
 class sim
 {
@@ -37,6 +44,8 @@ public:
     std::vector<particle_emitter> emitters;
 
     std::vector<shared_ptr<force>> forces;
+    std::vector<std::shared_ptr<soft_model>> soft_bodies; // kept out of world so nodes don't hit their own triangles ehh
+    soft_integrator integrator = soft_integrator::forward_euler;
 
     double step(double dt) // dt should be ms;
     {
@@ -201,6 +210,7 @@ public:
         auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(
             stop - start);
         particle_step(dt);
+        soft_step(dt);
         // std::cout << duration.count()  << " ns\n";
         cur_step++;
         return duration.count();
@@ -224,6 +234,71 @@ public:
         }
     }
 
+    // plain force based springs, integrated with whatever integrate_soft_node picks, explodes fast w/ bigger dt or stiffer springs
+    void soft_step(double dt)
+    {
+        double h = dt / MS_PER_SEC;
+        for (int b = 0; b < soft_bodies.size(); b++)
+        {
+            soft_model &body = *soft_bodies[b];
+            std::vector<soft_node> &nodes = body.nodes;
+
+            for (soft_node &n : nodes)
+            {
+                n.force = get_net_force(n.pos, n.vel, n.mass);
+            }
+            for (spring &s : body.springs)
+            {
+                vec3 f = spring_force(s, nodes);
+                nodes[s.a].force += f;
+                nodes[s.b].force += -f;
+            }
+            if (body.pressure != 0.0)
+            {
+                body.add_pressure_forces();
+            }
+
+            for (soft_node &n : nodes)
+            {
+                if (n.pinned)
+                {
+                    n.vel = vec3(0);
+                    continue;
+                }
+                vec3 new_pos = integrate_soft_node(n, h);
+                soft_node_collision(body, n, new_pos);
+            }
+
+            body.update_centroid();
+            body.refit();
+
+            if (SOFT_LOG_INTERVAL > 0 && cur_step % SOFT_LOG_INTERVAL == 0)
+            {
+                print_soft_energy(body);
+            }
+        }
+    }
+
+    void add_soft_body(std::shared_ptr<soft_model> body)
+    {
+        body->id = world.cur_id;
+        world.cur_id++;
+        soft_bodies.push_back(body);
+        idMap[body->id] = body;
+    }
+
+    const std::vector<soft_node> *soft_nodes(int id)
+    {
+        for (auto &body : soft_bodies)
+        {
+            if (body->id == id)
+            {
+                return &body->nodes;
+            }
+        }
+        return nullptr;
+    }
+
     void
     set_world(phy_hittable_list &new_world)
     {
@@ -241,6 +316,10 @@ public:
         {
             std::shared_ptr<phy_hittable> cur_object = world.objects[i];
             idMap[cur_object->id] = cur_object;
+        }
+        for (auto &body : soft_bodies)
+        {
+            idMap[body->id] = body;
         }
     }
 
@@ -316,6 +395,83 @@ private:
             cur_object->next_state.position += cur_object->next_state.velocity * (remaining_dt / MS_PER_SEC);
             saved_test_object->next_state.position += saved_test_object->next_state.velocity * (remaining_dt / MS_PER_SEC);
         }
+    }
+
+    // updates n.vel and returns where the node wants to move, collision then decides where it ends up
+    vec3 integrate_soft_node(soft_node &n, double h)
+    {
+        switch (integrator)
+        {
+        case soft_integrator::semi_implicit_euler:
+            return semi_implicit_euler(n, h);
+        case soft_integrator::forward_euler:
+        default:
+            return forward_euler(n, h);
+        }
+    }
+
+    vec3 forward_euler(soft_node &n, double h)
+    {
+        vec3 acc = n.force / n.mass;
+        vec3 new_pos = n.pos + n.vel * h;
+        n.vel += acc * h;
+        return new_pos;
+    }
+
+    vec3 semi_implicit_euler(soft_node &n, double h)
+    {
+        vec3 acc = n.force / n.mass;
+        n.vel += acc * h;
+        return n.pos + n.vel * h; // new velocity
+    }
+
+    void soft_node_collision(soft_model &body, soft_node &n, const vec3 &new_pos)
+    {
+        vec3 direction = new_pos - n.pos;
+        double length = direction.length();
+        if (length < 1e-12)
+        {
+            n.pos = new_pos;
+            return;
+        }
+        ray r = ray(n.pos, direction / length);
+        phy_hit_record rec;
+
+        if (world_bvh->hit(r, interval(0.001, length + 0.01), rec))
+        {
+            vec3 normal = rec.normal;
+            double v_dot_n = dot(n.vel, normal);
+            if (v_dot_n < 0) // moving into the surface
+            {
+                vec3 v_normal = v_dot_n * normal;
+                vec3 v_tangent = n.vel - v_normal;
+                n.vel = v_tangent * (1.0 - body.friction) - body.restitution * v_normal;
+            }
+            n.pos = rec.p + normal * 0.01;
+        }
+        else
+        {
+            n.pos = new_pos;
+        }
+    }
+
+    void print_soft_energy(const soft_model &body)
+    {
+        double kinetic = 0.0;
+        double potential = 0.0;
+        double max_stretch = 0.0;
+        for (auto &n : body.nodes)
+        {
+            kinetic += 0.5 * n.mass * n.vel.length_squared();
+        }
+        for (auto &s : body.springs)
+        {
+            potential += spring_energy(s, body.nodes);
+            double ratio = std::fabs((body.nodes[s.a].pos - body.nodes[s.b].pos).length() - s.rest_length) / s.rest_length;
+            max_stretch = std::max(max_stretch, ratio);
+        }
+        printf("soft %d step %d: kinetic %f spring %f total %f max stretch %.1f%%\n",
+               body.id, cur_step, kinetic, potential, kinetic + potential, max_stretch * 100.0);
     }
 
     void sphere_to_sphere_collision(phy_sphere &cur_sphere, phy_sphere &test_sphere, double t_hit, double dt)

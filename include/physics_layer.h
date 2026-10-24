@@ -3,6 +3,7 @@
 
 #include "physics/sim.h"
 #include "hittable_list.h"
+#include "soft_mesh.h"
 
 #include <iostream>
 #include <map>           // Required for std::map
@@ -56,6 +57,34 @@ public:
         simulation.world.add(new_mesh);
         new_mesh->update_tri_id(new_mesh->id); //IMPORTANT
         return new_mesh->id;
+    }
+
+    // returned so we can mess with params
+    std::shared_ptr<soft_model> add_soft_model_to_world(const std::string &file_path, double node_mass = 0.5)
+    {
+        auto new_body = std::make_shared<soft_model>(file_path, node_mass);
+        simulation.add_soft_body(new_body);
+        return new_body;
+    }
+
+    std::shared_ptr<soft_model> add_cloth_to_world(double width, double depth, int res_x, int res_z, double node_mass = 0.5)
+    {
+        auto new_body = std::make_shared<soft_model>(width, depth, res_x, res_z, node_mass);
+        simulation.add_soft_body(new_body);
+        return new_body;
+    }
+
+    std::shared_ptr<soft_mesh> connect_soft_model(std::shared_ptr<soft_model> body, std::shared_ptr<material> mat, hittable_list &world)
+    {
+        auto render_mesh = std::make_shared<soft_mesh>(body->faces, body->face_uvs, body->nodes, mat);
+        world.add(render_mesh);
+        soft_links.push_back(std::make_pair(render_mesh, body->id));
+        return render_mesh;
+    }
+
+    void set_soft_integrator(soft_integrator integrator)
+    {
+        simulation.integrator = integrator;
     }
 
     void add_force(const vec3 &direction, double strength)
@@ -122,6 +151,14 @@ public:
 
     void update_render(){
         std::lock_guard<std::mutex> lock(state_mutex_);
+        for (auto &link : soft_links)
+        {
+            const std::vector<soft_node> *nodes = simulation.soft_nodes(link.second);
+            if (nodes)
+            {
+                link.first->set_positions(*nodes);
+            }
+        }
         for(int i = 0; i < render_world.objects.size(); i++){
             auto cur_render_object = render_world.objects[i];
             cur_render_object->refresh();
@@ -145,6 +182,7 @@ private:
     hittable_list render_world = hittable_list();
 
     std::map<int,int> idMap; //should be renderId, then physicsId
+    std::vector<std::pair<std::shared_ptr<soft_mesh>, int>> soft_links; // render mesh, physics id
     std::mutex state_mutex_;   // now owned here, not a free global
 };
 

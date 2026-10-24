@@ -6,6 +6,84 @@
 
 #define tolerance 1e-4 // can change
 
+// shared by phy_tri and phy_soft_tri, caller sets rec.hit_object
+inline bool ray_tri_hit(const ray &r, interval ray_t, const point3 &v0, const point3 &v1, const point3 &v2, phy_hit_record &rec)
+{
+    auto epsilon = 1e-8;
+
+    vec3 edge1 = v1 - v0;
+    vec3 edge2 = v2 - v0;
+    const vec3 normal = unit_vector(cross(edge1, edge2));
+
+    vec3 ray_cross_e2 = cross(r.direction(), edge2);
+    float det = dot(edge1, ray_cross_e2);
+
+    if (std::fabs(det) < epsilon)
+    { // phy_ray  is parallel
+        return false;
+    }
+
+    float inv_det = 1.0 / det;
+    vec3 s = r.origin() - v0;
+    float u = inv_det * dot(s, ray_cross_e2);
+    if (u < 0.0 || u > 1.0)
+    {
+        return false; // phy_ray  passes outside of edge2 bounds
+    }
+
+    vec3 s_cross_e1 = cross(s, edge1);
+    float v = inv_det * dot(r.direction(), s_cross_e1);
+
+    if (v < 0.0 || u + v > 1.0)
+    {
+        return false;
+    } // Ray passes outside edge1's bounds
+
+    float t = inv_det * dot(edge2, s_cross_e1);
+
+    if (ray_t.contains(t)) // Ray intersection !!
+    {
+        rec.p = r.at(t); // phy_ray  at point
+        rec.set_normal(r, normal);
+        rec.t = t; // point where it hit
+        rec.bay_coord = vec3(1.0 - u - v, u, v);
+        return true;
+    }
+    else
+    {
+        return false;
+    } // This means that there is a line intersection but not a phy_ray  intersection.
+}
+
+inline phy_aabb tri_bounding_box(const point3 &v0, const point3 &v1, const point3 &v2)
+{
+    double min_x = std::min({v0.x(), v1.x(), v2.x()});
+    double min_y = std::min({v0.y(), v1.y(), v2.y()});
+    double min_z = std::min({v0.z(), v1.z(), v2.z()});
+
+    double max_x = std::max({v0.x(), v1.x(), v2.x()});
+    double max_y = std::max({v0.y(), v1.y(), v2.y()});
+    double max_z = std::max({v0.z(), v1.z(), v2.z()});
+
+    if (max_x - min_x < tolerance)
+    {
+        min_x -= tolerance * 0.5;
+        max_x += tolerance * 0.5;
+    }
+    if (max_y - min_y < tolerance)
+    {
+        min_y -= tolerance * 0.5;
+        max_y += tolerance * 0.5;
+    }
+    if (max_z - min_z < tolerance)
+    {
+        min_z -= tolerance * 0.5;
+        max_z += tolerance * 0.5;
+    }
+
+    return phy_aabb(point3(min_x, min_y, min_z), point3(max_x, max_y, max_z));
+}
+
 class phy_tri : public phy_hittable
 {
 public:
@@ -29,81 +107,17 @@ public:
 
     bool hit(const ray &r, interval ray_t, phy_hit_record &rec) override
     {
-        auto epsilon = 1e-8;
-
-        vec3 edge1 = vertices.at(1) - vertices.at(0);
-        vec3 edge2 = vertices.at(2) - vertices.at(0);
-        const vec3 normal = unit_vector(cross(edge1, edge2));
-
-        vec3 ray_cross_e2 = cross(r.direction(), edge2);
-        float det = dot(edge1, ray_cross_e2);
-
-        if (std::fabs(det) < epsilon)
-        { // phy_ray  is parallel
-            return false;
-        }
-
-        float inv_det = 1.0 / det;
-        vec3 s = r.origin() - vertices.at(0);
-        float u = inv_det * dot(s, ray_cross_e2);
-        if (u < 0.0 || u > 1.0)
+        if (ray_tri_hit(r, ray_t, vertices[0], vertices[1], vertices[2], rec))
         {
-            return false; // phy_ray  passes outside of edge2 bounds
-        }
-
-        vec3 s_cross_e1 = cross(s, edge1);
-        float v = inv_det * dot(r.direction(), s_cross_e1);
-
-        if (v < 0.0 || u + v > 1.0)
-        {
-            return false;
-        } // Ray passes outside edge1's bounds
-
-        float t = inv_det * dot(edge2, s_cross_e1);
-
-        if (ray_t.contains(t)) // Ray intersection !!
-        {
-            rec.p = r.at(t); // phy_ray  at point
-            rec.set_normal(r, normal);
-            // std::cout << "phy_tri normal: " << rec.normal << '\n';
-            rec.t = t; // point where it hit
-            rec.bay_coord = bay_coordinate(u, v);
             rec.hit_object = shared_from_this();
             return true;
         }
-        else
-        {
-            return false;
-        } // This means that there is a line intersection but not a phy_ray  intersection.
+        return false;
     }
 
     phy_aabb bounding_box() const override
     {
-        double min_x = std::min({vertices[0].x(), vertices[1].x(), vertices[2].x()});
-        double min_y = std::min({vertices[0].y(), vertices[1].y(), vertices[2].y()});
-        double min_z = std::min({vertices[0].z(), vertices[1].z(), vertices[2].z()});
-
-        double max_x = std::max({vertices[0].x(), vertices[1].x(), vertices[2].x()});
-        double max_y = std::max({vertices[0].y(), vertices[1].y(), vertices[2].y()});
-        double max_z = std::max({vertices[0].z(), vertices[1].z(), vertices[2].z()});
-
-        if (max_x - min_x < tolerance)
-        {
-            min_x -= tolerance * 0.5;
-            max_x += tolerance * 0.5;
-        }
-        if (max_y - min_y < tolerance)
-        {
-            min_y -= tolerance * 0.5;
-            max_y += tolerance * 0.5;
-        }
-        if (max_z - min_z < tolerance)
-        {
-            min_z -= tolerance * 0.5;
-            max_z += tolerance * 0.5;
-        }
-
-        return phy_aabb(point3(min_x, min_y, min_z), point3(max_x, max_y, max_z));
+        return tri_bounding_box(vertices[0], vertices[1], vertices[2]);
     }
 
     vec3 bay_coordinate(double u, double v) const

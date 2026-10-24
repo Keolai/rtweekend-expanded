@@ -221,12 +221,29 @@ int main()
     // auto vis_emitter = std::make_shared<metaball>(emitter.particles,smile_mat, 0.1);
 
     //PREDATOR/PREY DEMO
-    particle_emitter& emitter = sim.add_particle_emitter(vec3(0,4,0),vec3(0,-1,0),0,1,500,true);
-    emitter.behavior = emitter_behavior::fluid;
-    auto vis_emitter = std::make_shared<particle_container>(emitter.particles,smile_mat, second_mat, 0.2);
- 
+    // particle_emitter& emitter = sim.add_particle_emitter(vec3(0,4,0),vec3(0,-1,0),0,1,500,true);
+    // emitter.behavior = emitter_behavior::fluid;
+    // auto vis_emitter = std::make_shared<particle_container>(emitter.particles,smile_mat, second_mat, 0.2);
+
     //auto vis_emitter = std::make_shared<particle_mesh_container>(emitter.particles, "models/ufo.obj", ufo_mat, 0.30);
-    world.add(vis_emitter);
+    // world.add(vis_emitter);
+
+    //SOFT BODY DEMO
+    // falls ~1s, lands on the bowl, then explicit euler blows it up around step 110
+    // set_stiffness(40, 10, 1) stays stable, heavier damping or stiffer springs explode sooner
+    auto cloth = sim.add_cloth_to_world(2.0, 2.0, 15, 15, 1.0);
+    cloth->set_stiffness(80, 20, 2);
+    vec3 cloth_pos(0, 3, 0);
+    cloth->position(cloth_pos);
+    sim.connect_soft_model(cloth, smile_mat, world);
+
+    // closed meshes can hold their volume with pressure
+    // auto jelly = sim.add_soft_model_to_world("models/cube.obj", 1.0);
+    // jelly->set_stiffness(40, 10, 1);
+    // jelly->pressure = 20;
+    // vec3 jelly_pos(0, 2, 0);
+    // jelly->position(jelly_pos);
+    // sim.connect_soft_model(jelly, second_mat, world);
 
     // particle_emitter& sec_emitter = sim.add_particle_emitter(vec3(0.5,4,0),vec3(0,-1,0),1,1,20);
     // auto sec_vis_emitter = std::make_shared<metaball>(sec_emitter.particles,second_mat, 0.2);
