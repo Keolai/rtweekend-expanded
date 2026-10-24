@@ -7,6 +7,7 @@
 #include "objects/model.h"
 #include "objects/tri.h"
 #include "objects/particle.h"
+#include "objects/soft_model.h"
 
 #include "utilities/phy_bvh.h"
 #include "utilities/particle_bvh.h"
