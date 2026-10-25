@@ -36,6 +36,11 @@ public:
         return (*nodes)[indices[i]].pos;
     }
 
+    int index(int i) const
+    {
+        return indices[i];
+    }
+
     void position(vec3 &pos) override {} // nodes are moved by the soft body
 
     void update_state() override

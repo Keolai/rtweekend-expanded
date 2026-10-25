@@ -266,6 +266,7 @@ public:
                     continue;
                 }
                 vec3 new_pos = integrate_soft_node(n, h);
+                soft_soft_collision(b, n, new_pos);
                 soft_node_collision(body, n, new_pos);
             }
 
@@ -395,6 +396,77 @@ private:
             cur_object->next_state.position += cur_object->next_state.velocity * (remaining_dt / MS_PER_SEC);
             saved_test_object->next_state.position += saved_test_object->next_state.velocity * (remaining_dt / MS_PER_SEC);
         }
+    }
+
+    // the node and the 3 nodes of the hit triangle, weighted by the barycentric coords of the contact.
+    void soft_soft_collision(int body_index, soft_node &n, vec3 &new_pos)
+    {
+        vec3 direction = new_pos - n.pos;
+        double length = direction.length();
+        if (length < 1e-12) //too small
+        {
+            return;
+        }
+        ray r = ray(n.pos, direction / length);
+
+        phy_hit_record rec;
+        phy_hit_record temp_rec;
+        int hit_body = -1; //index of body hit
+        double closest_so_far = length + 0.01;
+        for (int i = 0; i < soft_bodies.size(); i++)
+        {
+            if (i != body_index && soft_bodies[i]->hit(r, interval(0.001, closest_so_far), temp_rec))
+            {
+                hit_body = i;
+                closest_so_far = temp_rec.t;
+                rec = temp_rec;
+            }
+        }
+        if (hit_body < 0)
+        {
+            return;
+        }
+
+        soft_model &self = *soft_bodies[body_index];
+        soft_model &other = *soft_bodies[hit_body];
+        auto hit_tri = std::static_pointer_cast<phy_soft_tri>(rec.hit_object);
+        soft_node *corners[3];
+        double weights[3] = {rec.bay_coord.x(), rec.bay_coord.y(), rec.bay_coord.z()};
+
+        vec3 contact_vel = vec3(0);
+        double tri_inv_mass = 0.0; // inverse mass of the contact point on the triangle
+        for (int i = 0; i < 3; i++)
+        {
+            corners[i] = &other.nodes[hit_tri->index(i)];
+            contact_vel += weights[i] * corners[i]->vel;
+            if (!corners[i]->pinned)
+            {
+                tri_inv_mass += weights[i] * weights[i] / corners[i]->mass;
+            }
+        }
+        double node_inv_mass = n.pinned ? 0.0 : 1.0 / n.mass;
+        double inv_mass_sum = node_inv_mass + tri_inv_mass;
+
+        vec3 normal = rec.normal;
+        vec3 rel_vel = n.vel - contact_vel;
+        double v_normal = dot(rel_vel, normal);
+        if (v_normal < 0 && inv_mass_sum > 0) // moving toward each other
+        {
+            double restitution = std::min(self.restitution, other.restitution);
+            double friction = std::max(self.friction, other.friction);
+            vec3 v_tangent = rel_vel - v_normal * normal;
+            vec3 impulse = (-(1.0 + restitution) * v_normal * normal - friction * v_tangent) / inv_mass_sum;
+
+            n.vel += impulse * node_inv_mass;
+            for (int i = 0; i < 3; i++)
+            {
+                if (!corners[i]->pinned)
+                {
+                    corners[i]->vel += -impulse * (weights[i] / corners[i]->mass);
+                }
+            }
+        }
+        new_pos = rec.p + normal * 0.01;
     }
 
     // updates n.vel and returns where the node wants to move, collision then decides where it ends up

@@ -192,7 +192,7 @@ int main()
 
     physics_layer sim;
 
-    sim.add_force(vec3(0, -1, 0), 5.0); // gravity, off for predator/prey so the hunt happens in 3D
+    sim.add_force(vec3(0, -1, 0), 5.0); // gravity
 
     // sim.add_vortex_force(vec3(0),vec3(0,1,0),5);
     // sim.add_range_force(vec3(0),2,10);
@@ -231,19 +231,21 @@ int main()
     //SOFT BODY DEMO
     // falls ~1s, lands on the bowl, then explicit euler blows it up around step 110
     // set_stiffness(40, 10, 1) stays stable, heavier damping or stiffer springs explode sooner
-    auto cloth = sim.add_cloth_to_world(2.0, 2.0, 15, 15, 1.0);
-    cloth->set_stiffness(80, 20, 2);
-    vec3 cloth_pos(0, 3, 0);
-    cloth->position(cloth_pos);
-    sim.connect_soft_model(cloth, smile_mat, world);
+    // auto cloth = sim.add_cloth_to_world(2.0, 2.0, 15, 15, 1.0);
+    //// set_stiffness(double stretch, double bend, double damping)
+    // cloth->set_stiffness(80, 20, 2);
+    // vec3 cloth_pos(0, 3, 0);
+    // cloth->position(cloth_pos);
+    // sim.connect_soft_model(cloth, smile_mat, world);
 
-    // closed meshes can hold their volume with pressure
-    // auto jelly = sim.add_soft_model_to_world("models/cube.obj", 1.0);
-    // jelly->set_stiffness(40, 10, 1);
-    // jelly->pressure = 20;
-    // vec3 jelly_pos(0, 2, 0);
-    // jelly->position(jelly_pos);
-    // sim.connect_soft_model(jelly, second_mat, world);
+    // closed mesh
+    auto jelly = sim.add_soft_model_to_world("models/cube.obj", 1.0);
+    //// set_stiffness(double stretch, double bend, double damping)
+    jelly->set_stiffness(40, 10, 1);
+    jelly->pressure = 20; //the higher the more unstable
+    vec3 jelly_pos(0, 2, 0);
+    jelly->position(jelly_pos);
+    sim.connect_soft_model(jelly, second_mat, world);
 
     // particle_emitter& sec_emitter = sim.add_particle_emitter(vec3(0.5,4,0),vec3(0,-1,0),1,1,20);
     // auto sec_vis_emitter = std::make_shared<metaball>(sec_emitter.particles,second_mat, 0.2);
