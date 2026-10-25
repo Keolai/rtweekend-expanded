@@ -31,7 +31,8 @@
 enum class soft_integrator
 {
     forward_euler,      // position uses the old velocity, explodes the fastest
-    semi_implicit_euler // velocity first, same order as the rigid body loop
+    semi_implicit_euler, // velocity first, same order as the rigid body loop
+    runge_kutta_4        // 4 force evaluations per step, needs the whole body so it can't be done per node
 };
 
 class sim
@@ -243,31 +244,18 @@ public:
             soft_model &body = *soft_bodies[b];
             std::vector<soft_node> &nodes = body.nodes;
 
-            for (soft_node &n : nodes)
-            {
-                n.force = get_net_force(n.pos, n.vel, n.mass);
-            }
-            for (spring &s : body.springs)
-            {
-                vec3 f = spring_force(s, nodes);
-                nodes[s.a].force += f;
-                nodes[s.b].force += -f;
-            }
-            if (body.pressure != 0.0)
-            {
-                body.add_pressure_forces();
-            }
+            std::vector<vec3> new_positions;
+            integrate_soft_body(body, h, new_positions);
 
-            for (soft_node &n : nodes)
+            for (int i = 0; i < nodes.size(); i++)
             {
-                if (n.pinned)
+                if (nodes[i].pinned)
                 {
-                    n.vel = vec3(0);
+                    nodes[i].vel = vec3(0);
                     continue;
                 }
-                vec3 new_pos = integrate_soft_node(n, h);
-                soft_soft_collision(b, n, new_pos);
-                soft_node_collision(body, n, new_pos);
+                soft_soft_collision(b, nodes[i], new_positions[i]);
+                soft_node_collision(body, nodes[i], new_positions[i]);
             }
 
             body.update_centroid();
@@ -469,12 +457,54 @@ private:
         new_pos = rec.p + normal * 0.01;
     }
 
-    // updates n.vel and returns where the node wants to move, collision then decides where it ends up
+    // fills node.force from the nodes' current pos and vel
+    void compute_soft_forces(soft_model &body)
+    {
+        std::vector<soft_node> &nodes = body.nodes;
+        for (soft_node &n : nodes)
+        {
+            n.force = get_net_force(n.pos, n.vel, n.mass);
+        }
+        for (spring &s : body.springs)
+        {
+            vec3 f = spring_force(s, nodes);
+            nodes[s.a].force += f;
+            nodes[s.b].force += -f;
+        }
+        if (body.pressure != 0.0)
+        {
+            body.add_pressure_forces();
+        }
+    }
+
+    // updates every node's vel and fills where each node wants to move, collision then decides where it ends up
+    void integrate_soft_body(soft_model &body, double h, std::vector<vec3> &new_positions)
+    {
+        if (integrator == soft_integrator::runge_kutta_4)
+        {
+            runge_kutta_four(body, h, new_positions);
+            return;
+        }
+
+        compute_soft_forces(body);
+        new_positions.resize(body.nodes.size());
+        for (int i = 0; i < body.nodes.size(); i++)
+        {
+            soft_node &n = body.nodes[i];
+            new_positions[i] = n.pinned ? n.pos : integrate_soft_node(n, h);
+        }
+    }
+
+    // per node schemes, they only need the node's own force from the start of the step
     vec3 integrate_soft_node(soft_node &n, double h)
     {
         switch (integrator)
         {
         case soft_integrator::semi_implicit_euler:
+            return semi_implicit_euler(n, h);
+        case soft_integrator::runge_kutta_4:
+            // to catch errors
+            assert(false && "runge_kutta_4 is integrated per body, use integrate_soft_body");
             return semi_implicit_euler(n, h);
         case soft_integrator::forward_euler:
         default:
@@ -495,6 +525,52 @@ private:
         vec3 acc = n.force / n.mass;
         n.vel += acc * h;
         return n.pos + n.vel * h; // new velocity
+    }
+
+    void runge_kutta_four(soft_model &body, double h, std::vector<vec3> &new_positions)
+    {
+        std::vector<soft_node> &nodes = body.nodes;
+        int count = nodes.size();
+
+        std::vector<vec3> start_pos(count), start_vel(count);
+        for (int i = 0; i < count; i++)
+        {
+            start_pos[i] = nodes[i].pos;
+            start_vel[i] = nodes[i].vel;
+        }
+
+        // k_vel[stage] is the velocity (derivative of pos), k_acc[stage] the acceleration (derivative of vel)
+        std::vector<vec3> k_vel[4], k_acc[4];
+        const double stage_step[4] = {0.0, 0.5 * h, 0.5 * h, h}; // how far from the start each stage samples
+        for (int stage = 0; stage < 4; stage++)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                if (stage > 0 && !nodes[i].pinned)
+                {
+                    nodes[i].pos = start_pos[i] + k_vel[stage - 1][i] * stage_step[stage];
+                    nodes[i].vel = start_vel[i] + k_acc[stage - 1][i] * stage_step[stage];
+                }
+            }
+            compute_soft_forces(body);
+
+            k_vel[stage].resize(count);
+            k_acc[stage].resize(count);
+            for (int i = 0; i < count; i++)
+            {
+                k_vel[stage][i] = nodes[i].pinned ? vec3(0) : nodes[i].vel;
+                k_acc[stage][i] = nodes[i].pinned ? vec3(0) : nodes[i].force / nodes[i].mass;
+            }
+        }
+
+        // put the body back at the start so collision raycasts from the old position to the new one
+        new_positions.resize(count);
+        for (int i = 0; i < count; i++)
+        {
+            nodes[i].pos = start_pos[i];
+            nodes[i].vel = start_vel[i] + (k_acc[0][i] + 2.0 * k_acc[1][i] + 2.0 * k_acc[2][i] + k_acc[3][i]) * (h / 6.0);
+            new_positions[i] = start_pos[i] + (k_vel[0][i] + 2.0 * k_vel[1][i] + 2.0 * k_vel[2][i] + k_vel[3][i]) * (h / 6.0);
+        }
     }
 
     void soft_node_collision(soft_model &body, soft_node &n, const vec3 &new_pos)
