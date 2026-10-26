@@ -30,7 +30,7 @@
 
 enum class soft_integrator
 {
-    forward_euler,      // position uses the old velocity, explodes the fastest
+    forward_euler,       // position uses the old velocity, explodes the fastest
     semi_implicit_euler, // velocity first, same order as the rigid body loop
     runge_kutta_4        // 4 force evaluations per step, needs the whole body so it can't be done per node
 };
@@ -266,6 +266,17 @@ public:
                 print_soft_energy(body);
             }
         }
+        for (int b = 0; b < soft_bodies.size(); b++)
+        {
+            for (int j = 0; j < soft_bodies.size(); j++)
+            {
+                // edge edge collision pass;
+                if (b != j)
+                {
+                    edge_edge_collision(*soft_bodies[b], *soft_bodies[j]);
+                }
+            }
+        }
     }
 
     void add_soft_body(std::shared_ptr<soft_model> body)
@@ -391,7 +402,7 @@ private:
     {
         vec3 direction = new_pos - n.pos;
         double length = direction.length();
-        if (length < 1e-12) //too small
+        if (length < 1e-12) // too small
         {
             return;
         }
@@ -399,7 +410,7 @@ private:
 
         phy_hit_record rec;
         phy_hit_record temp_rec;
-        int hit_body = -1; //index of body hit
+        int hit_body = -1; // index of body hit
         double closest_so_far = length + 0.01;
         for (int i = 0; i < soft_bodies.size(); i++)
         {
@@ -410,6 +421,7 @@ private:
                 rec = temp_rec;
             }
         }
+
         if (hit_body < 0)
         {
             return;
@@ -480,7 +492,7 @@ private:
     // updates every node's vel and fills where each node wants to move, collision then decides where it ends up
     void integrate_soft_body(soft_model &body, double h, std::vector<vec3> &new_positions)
     {
-        if (integrator == soft_integrator::runge_kutta_4) //instead of a case in the normal integration function, but there is a catcher there
+        if (integrator == soft_integrator::runge_kutta_4) // instead of a case in the normal integration function, but there is a catcher there
         {
             runge_kutta_four(body, h, new_positions);
             return;
@@ -600,6 +612,144 @@ private:
         else
         {
             n.pos = new_pos;
+        }
+    }
+
+    void edge_edge_collision(soft_model &a, soft_model &b)
+    {
+        phy_hit_record tmp_rec;
+        phy_hit_record rec;
+        double closest_so_far = std::numeric_limits<double>::max();
+        bool hit = false;
+        // iterate a.springs directly instead of a.get_edges(), so we keep the real node indices (a.u, a.v) of the winning edge
+        int winner_u = -1;
+        int winner_v = -1;
+
+        for (spring &s : a.springs)
+        {
+            if (s.type != spring_type::structural)
+            {
+                continue;
+            }
+
+            edge e;
+            e.u = &a.nodes[s.a].pos;
+            e.v = &a.nodes[s.b].pos;
+
+            if (b.edge_hit(e, tmp_rec))
+            {
+                if (tmp_rec.t < closest_so_far)
+                {
+                    rec = tmp_rec;
+                    hit = true;
+                    closest_so_far = tmp_rec.t;
+                    winner_u = s.a;
+                    winner_v = s.b;
+                }
+            }
+        }
+        if (!hit)
+        {
+            return;
+        }
+
+        // a's edge endpoints, blended by how far along the edge the contact point is
+        soft_node &a0 = a.nodes[winner_u];
+        soft_node &a1 = a.nodes[winner_v];
+        double weight_a1 = rec.bay_coord.x();
+        double weight_a0 = 1.0 - weight_a1;
+
+        // b's triangle side endpoints, blended the same way instead of reading a single corner
+        auto hit_tri = std::static_pointer_cast<phy_soft_tri>(rec.hit_object);
+        int side = (int)rec.bay_coord.z();
+        soft_node &b0 = b.nodes[hit_tri->index(side)];
+        soft_node &b1 = b.nodes[hit_tri->index((side + 1) % 3)];
+        double weight_b1 = rec.bay_coord.y();
+        double weight_b0 = 1.0 - weight_b1;
+
+        double inv_mass_a = 0.0;
+        if (!a0.pinned)
+        {
+            inv_mass_a += weight_a0 * weight_a0 / a0.mass;
+        }
+        if (!a1.pinned)
+        {
+            inv_mass_a += weight_a1 * weight_a1 / a1.mass;
+        }
+
+        double inv_mass_b = 0.0;
+        if (!b0.pinned)
+        {
+            inv_mass_b += weight_b0 * weight_b0 / b0.mass;
+        }
+        if (!b1.pinned)
+        {
+            inv_mass_b += weight_b1 * weight_b1 / b1.mass;
+        }
+
+        double inv_mass_sum = inv_mass_a + inv_mass_b;
+        if (inv_mass_sum <= 0.0)
+        {
+            return; // both sides pinned
+        }
+
+        vec3 normal = rec.normal; // points from b toward a
+
+        // push apart to a small resting gap, same as soft_node_collision's rec.p + normal * 0.01.
+        // this runs on every hit, not just an approaching one, since two edges resting right at
+        // the contact distance still need to be kept apart even with no relative velocity.
+        double target_gap = 0.01;
+        if (rec.t < target_gap)
+        {
+            double push = (target_gap - rec.t) / inv_mass_sum;
+            if (!a0.pinned)
+            {
+                a0.pos += normal * (push * weight_a0 / a0.mass);
+            }
+            if (!a1.pinned)
+            {
+                a1.pos += normal * (push * weight_a1 / a1.mass);
+            }
+            if (!b0.pinned)
+            {
+                b0.pos += -normal * (push * weight_b0 / b0.mass);
+            }
+            if (!b1.pinned)
+            {
+                b1.pos += -normal * (push * weight_b1 / b1.mass);
+            }
+        }
+
+        vec3 contact_vel_a = weight_a0 * a0.vel + weight_a1 * a1.vel;
+        vec3 contact_vel_b = weight_b0 * b0.vel + weight_b1 * b1.vel;
+
+        vec3 rel_vel = contact_vel_a - contact_vel_b;
+        double v_normal = dot(rel_vel, normal);
+        if (v_normal >= 0.0) // already separating, the push above is enough
+        {
+            return;
+        }
+
+        double restitution = std::min(a.restitution, b.restitution);
+        double friction = std::max(a.friction, b.friction);
+        vec3 v_tangent = rel_vel - v_normal * normal;
+        vec3 impulse = (-(1.0 + restitution) * v_normal * normal - friction * v_tangent) / inv_mass_sum;
+
+        if (!a0.pinned)
+        {
+            a0.vel += impulse * (weight_a0 / a0.mass);
+        }
+        if (!a1.pinned)
+        {
+            a1.vel += impulse * (weight_a1 / a1.mass);
+        }
+        if (!b0.pinned)
+        {
+            b0.vel += -impulse * (weight_b0 / b0.mass);
+        }
+        if (!b1.pinned)
+        {
+            b1.vel += -impulse * (weight_b1 / b1.mass);
         }
     }
 
@@ -777,9 +927,9 @@ private:
             compute_gross_steering(cur_emitter.particles, neighbor_bvh, cur_emitter.flock, steering, world_bvh.get());
             break;
         default:
-            break; //ehh
+            break; // ehh
         }
-        //compute_flock_steering(cur_emitter.particles, neighbor_bvh, cur_emitter.flock, steering, world_bvh.get());
+        // compute_flock_steering(cur_emitter.particles, neighbor_bvh, cur_emitter.flock, steering, world_bvh.get());
         for (size_t i = 0; i < cur_emitter.particles.size(); i++)
         {
             particle &p = cur_emitter.particles[i];
@@ -793,7 +943,7 @@ private:
         normal_particle_behavior(cur_emitter, dt); // now just do normal behavior I guess
     }
 
-    private:
+private:
     sph_scratch fluid_scratch;
 };
 

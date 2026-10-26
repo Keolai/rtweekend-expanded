@@ -27,6 +27,10 @@ public:
     std::shared_ptr<phy_hittable> hit_object = nullptr;
 
     vec3 bay_coord;
+    int node_index;
+    vec3 velocity;
+    double mass; 
+    double pinned;
 
     double t;
     bool front_face;
@@ -106,6 +110,7 @@ protected:
 
             best = d2;
             hit = true;
+            rec.node_index = side;
 
             rec.p = c_my;
             rec.normal = n;

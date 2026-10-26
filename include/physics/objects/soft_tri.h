@@ -18,7 +18,7 @@ public:
 
     bool hit(const ray &r, interval ray_t, phy_hit_record &rec) override
     {
-        if (ray_tri_hit(r, ray_t, vertex(0), vertex(1), vertex(2), rec)) //this is in the normal tri
+        if (ray_tri_hit(r, ray_t, vertex(0), vertex(1), vertex(2), rec)) // this is in the normal tri
         {
             rec.hit_object = shared_from_this();
             return true;
@@ -68,18 +68,27 @@ public:
         return {vertex(0), vertex(1), vertex(2)};
     }
 
-    std::vector<edge> get_edges() override {
+    std::vector<edge> get_edges() override
+    {
         std::vector<edge> tmp;
         return tmp;
     }
 
     bool edge_hit(edge &e, phy_hit_record &rec) override
     {
-        return edge_tri_hit(e, vertex(0), vertex(1), vertex(2), rec);
+        if (edge_tri_hit(e, vertex(0), vertex(1), vertex(2), rec))
+        {
+            int global = index(rec.node_index);
+            rec.mass = (*nodes)[global].mass;
+            rec.velocity = (*nodes)[global].vel;
+            rec.pinned = (*nodes)[global].pinned;
+            return true;
+        }
+        return false;
     }
 
 private:
-    const std::vector<soft_node> *nodes; //this is defined in spring.h, I know weird
+    const std::vector<soft_node> *nodes; // this is defined in spring.h, I know weird
     int indices[3];
 };
 
