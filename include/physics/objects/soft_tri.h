@@ -18,7 +18,7 @@ public:
 
     bool hit(const ray &r, interval ray_t, phy_hit_record &rec) override
     {
-        if (ray_tri_hit(r, ray_t, vertex(0), vertex(1), vertex(2), rec))
+        if (ray_tri_hit(r, ray_t, vertex(0), vertex(1), vertex(2), rec)) //this is in the normal tri
         {
             rec.hit_object = shared_from_this();
             return true;
@@ -73,8 +73,9 @@ public:
         return tmp;
     }
 
-    bool edge_hit(edge &e, phy_hit_record &rec) override {
-        return false;
+    bool edge_hit(edge &e, phy_hit_record &rec) override
+    {
+        return edge_tri_hit(e, vertex(0), vertex(1), vertex(2), rec);
     }
 
 private:

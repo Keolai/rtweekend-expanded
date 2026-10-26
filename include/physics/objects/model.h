@@ -182,6 +182,10 @@ public:
         {
             triangles[i]->position(newPos); // maybe
         }
+        if (model_node)
+        {
+            model_node->refit(); // the triangles moved, so the boxes have to follow
+        }
     }
 
     void set_pivot_to_center()
@@ -244,18 +248,20 @@ public:
         return vertices;
     }
 
-     std::vector<edge> get_edges() override {
-        std::vector<edge> tmp;
-        tmp.reserve(edges.size()); //yuck
-        for (int i = 0; i < edges.size(); i++){
-            *tmp[i].u = *edges[i].u + current_state.position;
-            *tmp[i].v = *edges[i].v + current_state.position;
-        }
-        return tmp;
+    // model space, add current_state.position to get world positions (same as get_vertices)
+    std::vector<edge> get_edges() override
+    {
+        return edges;
     }
 
-    bool edge_hit(edge &e, phy_hit_record &rec) override { //TODO:
-        return false;
+    // e is expected in world space, the triangles already are (rotation included)
+    bool edge_hit(edge &e, phy_hit_record &rec) override
+    {
+        if (!model_node)
+        {
+            create_bvh();
+        }
+        return model_node->edge_hit(e, rec);
     }
 
 private:
@@ -263,7 +269,7 @@ private:
     std::string file_path;
     std::vector<vec3> vertices; // original vertices
     std::shared_ptr<phy_bvh_node> model_node;
-    std::vector<edge> edges; //original edges
+    std::vector<edge> edges; // original edges
 
     point3 pivot;
 

@@ -43,6 +43,19 @@ public:
         return z;
     }
 
+    // true if the boxes overlap once other is grown by pad on every side
+    bool overlaps(const phy_aabb &other, double pad) const
+    {
+        for (int a = 0; a < 3; a++)
+        {
+            if (axis(a).max < other.axis(a).min - pad || other.axis(a).max + pad < axis(a).min)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
     bool hit(const ray &r, interval ray_t) const
     {
 

@@ -110,7 +110,28 @@ public:
         return hit_left || hit_right;
     }
 
-    bool edge_hit(edge &e, phy_hit_record &rec) override {
+    // same shape as hit(): skip nodes the edge can't reach, keep the closer contact from the two children
+    bool edge_hit(edge &e, phy_hit_record &rec) override
+    {
+        if (!left || !bbox.overlaps(phy_aabb(e.start(), e.end()), EDGE_THICKNESS))
+        {
+            return false;
+        }
+
+        phy_hit_record left_rec, right_rec;
+        bool hit_left = left->edge_hit(e, left_rec);
+        bool hit_right = right && right->edge_hit(e, right_rec);
+
+        if (hit_left && (!hit_right || left_rec.t <= right_rec.t))
+        {
+            rec = left_rec;
+            return true;
+        }
+        if (hit_right)
+        {
+            rec = right_rec;
+            return true;
+        }
         return false;
     }
  

@@ -188,8 +188,9 @@ public:
         return edges;
     }
 
-    bool edge_hit(edge &e, phy_hit_record &rec) override { //TODO:
-        return false;
+    bool edge_hit(edge &e, phy_hit_record &rec) override
+    {
+        return soft_model_node->edge_hit(e, rec);
     }
 
 private:

@@ -197,8 +197,9 @@ public:
         return tmp;
     }
     
-    bool edge_hit(edge &e, phy_hit_record &rec) override {
-        return false;
+    bool edge_hit(edge &e, phy_hit_record &rec) override
+    {
+        return edge_tri_hit(e, vertices[0], vertices[1], vertices[2], rec);
     }
 
 private:
