@@ -5,6 +5,14 @@
 #include "utilities/state.h"
 #include <vector>
 
+struct edge{ //this is for edge-edge
+    vec3 *u = nullptr;
+    vec3 *v = nullptr;
+
+    const vec3 &start() const { return *u; }
+    const vec3 &end() const { return *v; }
+};
+
 class phy_hittable;
 
 class phy_hit_record
@@ -41,6 +49,7 @@ public:
     virtual vec3 closest_point_on_surface(const vec3 &pos) const = 0;
     virtual std::vector<vec3> get_vertices() const = 0;
     virtual void position(vec3 &pos) = 0;
+    virtual std::vector<edge> get_edges() = 0;
 
 
     state current_state = state();

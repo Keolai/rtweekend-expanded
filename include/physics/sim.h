@@ -480,7 +480,7 @@ private:
     // updates every node's vel and fills where each node wants to move, collision then decides where it ends up
     void integrate_soft_body(soft_model &body, double h, std::vector<vec3> &new_positions)
     {
-        if (integrator == soft_integrator::runge_kutta_4)
+        if (integrator == soft_integrator::runge_kutta_4) //instead of a case in the normal integration function, but there is a catcher there
         {
             runge_kutta_four(body, h, new_positions);
             return;

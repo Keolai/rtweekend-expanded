@@ -120,6 +120,11 @@ public:
         return radius;
     }
 
+    std::vector<edge> get_edges() override {
+        std::vector<edge> tmp;
+        return tmp;
+    }
+
 private:
     point3 center;
     double radius;

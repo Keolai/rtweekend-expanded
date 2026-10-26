@@ -100,6 +100,11 @@ public:
         return;
     }
 
+    std::vector<edge> get_edges() override {
+        std::vector<edge> tmp;
+        return tmp;
+    }
+
     
 };
 

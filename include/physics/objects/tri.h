@@ -192,6 +192,11 @@ public:
         return tmp;
     }
 
+     std::vector<edge> get_edges() override {
+        std::vector<edge> tmp;
+        return tmp;
+    }
+
 private:
     std::array<point3, 3> vertices;
     std::array<point3, 3> original_vertices; // original positions of vertices in model

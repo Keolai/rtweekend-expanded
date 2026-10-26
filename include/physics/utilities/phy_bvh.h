@@ -145,6 +145,11 @@ public:
      void position(vec3 &pos) override {
         return;
     }
+
+    std::vector<edge> get_edges() override {
+        std::vector<edge> tmp;
+        return tmp;
+    }
  
 private:
     std::shared_ptr<phy_hittable> left;

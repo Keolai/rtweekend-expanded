@@ -68,6 +68,11 @@ public:
         return {vertex(0), vertex(1), vertex(2)};
     }
 
+    std::vector<edge> get_edges() override {
+        std::vector<edge> tmp;
+        return tmp;
+    }
+
 private:
     const std::vector<soft_node> *nodes; //this is defined in spring.h, I know weird
     int indices[3];

@@ -6,6 +6,8 @@
 #include "../hittable.h"
 #include "../utilities/phy_bvh.h"
 
+#include <set>
+
 struct phy_face_vertex
 {
     int v = -1;
@@ -54,6 +56,7 @@ public:
         }
 
         std::string line;
+        std::set<std::pair<int, int>> edge_pairs; // (low index, high index) so shared edges are only added once
 
         while (std::getline(file, line))
         {
@@ -99,6 +102,14 @@ public:
                     face_indices.push_back(vertex_index - 1);
                 }
 
+                // polygon outline, so the diagonals from the fan triangulation below are left out
+                for (size_t i = 0; i < face_indices.size(); i++)
+                {
+                    int a = face_indices[i];
+                    int b = face_indices[(i + 1) % face_indices.size()];
+                    edge_pairs.insert(std::make_pair(std::min(a, b), std::max(a, b)));
+                }
+
                 //
                 // Triangulate polygon faces
                 // Supports:
@@ -127,6 +138,15 @@ public:
                 }
             }
         } // DONE READING LINES
+
+        // vertices is done growing here, so the edge pointers stay valid
+        for (auto &ab : edge_pairs)
+        {
+            edge e;
+            e.u = &vertices[ab.first];
+            e.v = &vertices[ab.second];
+            edges.push_back(e);
+        }
 
         return true;
     }
@@ -224,11 +244,22 @@ public:
         return vertices;
     }
 
+     std::vector<edge> get_edges() override {
+        std::vector<edge> tmp;
+        tmp.reserve(edges.size()); //yuck
+        for (int i = 0; i < edges.size(); i++){
+            *tmp[i].u = *edges[i].u + current_state.position;
+            *tmp[i].v = *edges[i].v + current_state.position;
+        }
+        return tmp;
+    }
+
 private:
     point3 pos = vec3(0);
     std::string file_path;
     std::vector<vec3> vertices; // original vertices
     std::shared_ptr<phy_bvh_node> model_node;
+    std::vector<edge> edges; //original edges
 
     point3 pivot;
 

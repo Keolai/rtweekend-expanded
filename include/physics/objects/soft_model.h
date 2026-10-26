@@ -184,10 +184,15 @@ public:
         return tmp;
     }
 
+    std::vector<edge> get_edges() override {
+        return edges;
+    }
+
 private:
     point3 pos = vec3(0);
     std::string file_path;
     std::shared_ptr<phy_bvh_node> soft_model_node;
+    std::vector<edge> edges;
 
     bool load_soft_model(double node_mass)
     {
@@ -321,6 +326,18 @@ private:
             triangles.push_back(std::make_shared<phy_soft_tri>(&nodes, f[0], f[1], f[2]));
         }
         soft_model_node = std::make_shared<phy_bvh_node>(triangles, 0, triangles.size());
+
+        // structural springs are exactly the unique mesh edges, pointing at the nodes keeps the edges live
+        for (auto &s : springs)
+        {
+            if (s.type == spring_type::structural)
+            {
+                edge e;
+                e.u = &nodes[s.a].pos;
+                e.v = &nodes[s.b].pos;
+                edges.push_back(e);
+            }
+        }
         update_centroid();
         is_static = false;
     }
