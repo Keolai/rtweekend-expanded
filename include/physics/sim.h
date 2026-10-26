@@ -210,11 +210,96 @@ public:
         auto stop = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(
             stop - start);
+        rigid_soft_collision(dt);
         particle_step(dt);
         soft_step(dt);
         // std::cout << duration.count()  << " ns\n";
         cur_step++;
         return duration.count();
+    }
+
+    // rigid->soft
+    void rigid_soft_collision(double dt)
+    {
+        for (int i = 0; i < world.size(); i++)
+        {
+            auto cur_object = world.objects[i];
+            if (!cur_object || cur_object->is_static)
+            {
+                continue;
+            }
+
+            std::vector<vec3> object_vertices = cur_object->get_vertices();
+            for (int s = 0; s < soft_bodies.size(); s++)
+            {
+                soft_model &soft_body = *soft_bodies[s];
+                for (int k = 0; k < object_vertices.size(); k++)
+                {
+                    vec3 vertex_pos = cur_object->current_state.position + object_vertices[k];
+                    vec3 vertex_next_pos = cur_object->next_state.position + object_vertices[k];
+                    vec3 direction = vertex_next_pos - vertex_pos;
+                    double length = direction.length();
+                    if (length < 1e-12)
+                    {
+                        continue;
+                    }
+
+                    ray r = ray(vertex_pos, direction / length);
+                    phy_hit_record rec;
+                    if (soft_body.hit(r, interval(0.001, length + 0.01), rec))
+                    {
+                        rigid_soft_response(*cur_object, soft_body, rec);
+                    }
+                }
+            }
+        }
+    }
+
+    void rigid_soft_response(phy_hittable &rigid, soft_model &soft, phy_hit_record &rec)
+    {
+        auto hit_tri = std::static_pointer_cast<phy_soft_tri>(rec.hit_object);
+        soft_node *corners[3];
+        double weights[3] = {rec.bay_coord.x(), rec.bay_coord.y(), rec.bay_coord.z()};
+
+        vec3 contact_vel = vec3(0);
+        double tri_inv_mass = 0.0;
+        for (int i = 0; i < 3; i++)
+        {
+            corners[i] = &soft.nodes[hit_tri->index(i)];
+            contact_vel += weights[i] * corners[i]->vel;
+            if (!corners[i]->pinned)
+            {
+                tri_inv_mass += weights[i] * weights[i] / corners[i]->mass;
+            }
+        }
+
+        double rigid_inv_mass = 1.0 / rigid.mass;
+        double inv_mass_sum = rigid_inv_mass + tri_inv_mass;
+        if (inv_mass_sum <= 0.0)
+        {
+            return;
+        }
+
+        vec3 normal = rec.normal; // points from the soft triangle toward the incoming rigid vertex
+        vec3 rel_vel = rigid.next_state.velocity - contact_vel;
+        double v_normal = dot(rel_vel, normal);
+        if (v_normal < 0.0) // approaching
+        {
+            double restitution = std::min(rigid.restitution, soft.restitution);
+            double friction = std::max(rigid.friction, soft.friction);
+            vec3 v_tangent = rel_vel - v_normal * normal;
+            vec3 impulse = (-(1.0 + restitution) * v_normal * normal - friction * v_tangent) / inv_mass_sum;
+
+            rigid.next_state.velocity += impulse * rigid_inv_mass;
+            for (int i = 0; i < 3; i++)
+            {
+                if (!corners[i]->pinned)
+                {
+                    corners[i]->vel += -impulse * (weights[i] / corners[i]->mass);
+                }
+            }
+        }
+        rigid.next_state.position += normal * 0.01;
     }
 
     void particle_step(double dt)
