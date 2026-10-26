@@ -196,6 +196,10 @@ public:
         std::vector<edge> tmp;
         return tmp;
     }
+    
+    bool edge_hit(edge &e, phy_hit_record &rec) override {
+        return false;
+    }
 
 private:
     std::array<point3, 3> vertices;

@@ -50,6 +50,7 @@ public:
     virtual std::vector<vec3> get_vertices() const = 0;
     virtual void position(vec3 &pos) = 0;
     virtual std::vector<edge> get_edges() = 0;
+    virtual bool edge_hit(edge &e, phy_hit_record &rec) = 0;
 
 
     state current_state = state();

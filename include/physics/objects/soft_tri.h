@@ -73,6 +73,10 @@ public:
         return tmp;
     }
 
+    bool edge_hit(edge &e, phy_hit_record &rec) override {
+        return false;
+    }
+
 private:
     const std::vector<soft_node> *nodes; //this is defined in spring.h, I know weird
     int indices[3];

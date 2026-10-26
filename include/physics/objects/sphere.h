@@ -125,6 +125,10 @@ public:
         return tmp;
     }
 
+    bool edge_hit(edge &e, phy_hit_record &rec) override {
+        return false;
+    }
+
 private:
     point3 center;
     double radius;

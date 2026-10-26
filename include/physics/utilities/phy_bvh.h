@@ -109,6 +109,10 @@ public:
  
         return hit_left || hit_right;
     }
+
+    bool edge_hit(edge &e, phy_hit_record &rec) override {
+        return false;
+    }
  
     phy_aabb bounding_box() const override
     {

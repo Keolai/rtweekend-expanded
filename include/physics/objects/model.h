@@ -254,6 +254,10 @@ public:
         return tmp;
     }
 
+    bool edge_hit(edge &e, phy_hit_record &rec) override { //TODO:
+        return false;
+    }
+
 private:
     point3 pos = vec3(0);
     std::string file_path;

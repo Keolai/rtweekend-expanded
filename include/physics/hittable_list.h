@@ -45,6 +45,10 @@ public:
         return hit_anything;
     }
 
+    bool edge_hit(edge &e, phy_hit_record &rec) override {
+        return false;
+    }
+
     phy_aabb bounding_box() const override // dont really need yet?
     {
         if (objects.empty())
