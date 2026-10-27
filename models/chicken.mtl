@@ -1,0 +1,12 @@
+# Blender 4.0.2 MTL File: 'chicken.blend'
+# www.blender.org
+
+newmtl chicken
+Ns 276.070129
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 1
+map_Kd /home/keolai/Documents/Blender/chicken.png

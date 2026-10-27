@@ -23,10 +23,10 @@
 #include <chrono>
 #include <mutex>
 
-#define SIM_RATE_MS 33 //interval
+#define SIM_RATE_MS 10 //interval
 
-#define RECORDING false
-#define MAX_RECORDING_STEPS 500
+#define RECORDING true
+#define MAX_RECORDING_STEPS 700
 
 std::atomic<bool> running{true};
 std::mutex state_mutex;
@@ -186,13 +186,14 @@ int main()
     auto cube_mat = make_shared<lambertian>(color(0.5, 0.5, 0.5)); // world material
     auto em = make_shared<emmissive>(color(0.5));
     auto tex_mat = make_shared<metal>("models/textures/checkered.ppm", 0.1);
-    auto ufo_mat = make_shared<lambertian>("models/textures/ufo_tex.ppm");
+    auto chicken_mat = make_shared<lambertian>("models/textures/chicken.ppm");
 
     auto smile_mat = make_shared<lambertian>("models/textures/smiles.ppm");
 
     physics_layer sim;
 
     sim.add_force(vec3(0, -1, 0), 5.0); // gravity
+    sim.set_soft_integrator(soft_integrator::runge_kutta_4);
 
     // sim.add_vortex_force(vec3(0),vec3(0,1,0),5);
     // sim.add_range_force(vec3(0),2,10);
@@ -207,10 +208,14 @@ int main()
     // world.add(my_sphere);
 
     //bowl
-    auto bowl_Model = std::make_shared<mesh>("models/bowl.obj", tex_mat, world); //this is to check stuff
-    int bowl_physics = sim.add_mesh_to_world("models/bowl.obj",true);
-    sim.connect_objects(bowl_Model->id,bowl_physics);
+    // auto bowl_Model = std::make_shared<mesh>("models/bowl.obj", tex_mat, world); //this is to check stuff
+    // int bowl_physics = sim.add_mesh_to_world("models/bowl.obj",true);
+    // sim.connect_objects(bowl_Model->id,bowl_physics);
 
+    //plane
+     auto plane_Model = std::make_shared<mesh>("models/plane.obj", tex_mat, world); //this is to check stuff
+    int plane_physics = sim.add_mesh_to_world("models/plane.obj",true);
+    sim.connect_objects(plane_Model->id,plane_physics);
 
     
 
@@ -239,13 +244,14 @@ int main()
     // sim.connect_soft_model(cloth, smile_mat, world);
 
     // closed mesh
-    auto jelly = sim.add_soft_model_to_world("models/cube.obj", 1.0);
+    auto jelly = sim.add_soft_model_to_world("models/chicken.obj", 1.0);
     //// set_stiffness(double stretch, double bend, double damping)
-    jelly->set_stiffness(40, 10, 1);
-    jelly->pressure = 20; //the higher the more unstable
-    vec3 jelly_pos(0, 2, 0);
+    // the original (40, 10, 1) was tuned for the 8-node cube
+    jelly->set_stiffness(3000, 800, 6);
+    jelly->pressure = 500; // higher stiffness needs more pressure, but too high causes explosion
+    vec3 jelly_pos(0, 4, 0);
     jelly->position(jelly_pos);
-    sim.connect_soft_model(jelly, second_mat, world);
+    sim.connect_soft_model(jelly, chicken_mat, world);
 
     // particle_emitter& sec_emitter = sim.add_particle_emitter(vec3(0.5,4,0),vec3(0,-1,0),1,1,20);
     // auto sec_vis_emitter = std::make_shared<metaball>(sec_emitter.particles,second_mat, 0.2);
@@ -279,7 +285,7 @@ int main()
     cam.max_depth = 25;
 
     cam.vfov = 70;
-    cam.lookfrom = point3(0, 4, 1); // 0 5 10 default
+    cam.lookfrom = point3(4, 5, 1); // 0 5 10 default
     cam.lookat = point3(0, 0, 0);
     cam.vup = vec3(0, 1, 0);
     cam.ambient = color(0.1);
