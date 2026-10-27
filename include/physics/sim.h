@@ -32,7 +32,9 @@ enum class soft_integrator
 {
     forward_euler,       // position uses the old velocity, explodes the fastest
     semi_implicit_euler, // velocity first, same order as the rigid body loop
-    runge_kutta_4        // 4 force evaluations per step, needs the whole body so it can't be done per node
+    runge_kutta_4,       // needs the whole body
+    heuns_method,        // RK2 / trapezoidal, needs the whole body
+    velocity_verlet      // leapfrog (kick-drift-kick), needs the whole body
 };
 
 class sim
@@ -582,6 +584,16 @@ private:
             runge_kutta_four(body, h, new_positions);
             return;
         }
+        if (integrator == soft_integrator::heuns_method)
+        {
+            heuns_method(body, h, new_positions);
+            return;
+        }
+        if (integrator == soft_integrator::velocity_verlet)
+        {
+            velocity_verlet(body, h, new_positions);
+            return;
+        }
 
         compute_soft_forces(body);
         new_positions.resize(body.nodes.size());
@@ -602,6 +614,12 @@ private:
         case soft_integrator::runge_kutta_4:
             // to catch errors
             assert(false && "runge_kutta_4 is integrated per body, use integrate_soft_body");
+            return semi_implicit_euler(n, h);
+        case soft_integrator::heuns_method:
+            assert(false && "heuns_method is integrated per body, use integrate_soft_body");
+            return semi_implicit_euler(n, h);
+        case soft_integrator::velocity_verlet:
+            assert(false && "velocity_verlet is integrated per body, use integrate_soft_body");
             return semi_implicit_euler(n, h);
         case soft_integrator::forward_euler:
         default:
@@ -636,9 +654,8 @@ private:
             start_vel[i] = nodes[i].vel;
         }
 
-        // k_vel[stage] is the velocity (derivative of pos), k_acc[stage] the acceleration (derivative of vel)
-        std::vector<vec3> k_vel[4], k_acc[4];
-        const double stage_step[4] = {0.0, 0.5 * h, 0.5 * h, h}; // how far from the start each stage samples
+        std::vector<vec3> k_vel[4], k_acc[4]; //velocity and acceleration
+        const double stage_step[4] = {0.0, 0.5 * h, 0.5 * h, h};
         for (int stage = 0; stage < 4; stage++)
         {
             for (int i = 0; i < count; i++)
@@ -667,6 +684,98 @@ private:
             nodes[i].pos = start_pos[i];
             nodes[i].vel = start_vel[i] + (k_acc[0][i] + 2.0 * k_acc[1][i] + 2.0 * k_acc[2][i] + k_acc[3][i]) * (h / 6.0);
             new_positions[i] = start_pos[i] + (k_vel[0][i] + 2.0 * k_vel[1][i] + 2.0 * k_vel[2][i] + k_vel[3][i]) * (h / 6.0);
+        }
+    }
+
+    // RK2 / trapezoidal rule
+    void heuns_method(soft_model &body, double h, std::vector<vec3> &new_positions)
+    {
+        std::vector<soft_node> &nodes = body.nodes;
+        int count = nodes.size();
+
+        std::vector<vec3> start_pos(count), start_vel(count);
+        for (int i = 0; i < count; i++)
+        {
+            start_pos[i] = nodes[i].pos;
+            start_vel[i] = nodes[i].vel;
+        }
+
+        compute_soft_forces(body);
+        std::vector<vec3> k0_vel(count), k0_acc(count);
+        for (int i = 0; i < count; i++)
+        {
+            k0_vel[i] = nodes[i].pinned ? vec3(0) : nodes[i].vel;
+            k0_acc[i] = nodes[i].pinned ? vec3(0) : nodes[i].force / nodes[i].mass;
+        }
+
+        for (int i = 0; i < count; i++) 
+        {
+            if (!nodes[i].pinned)
+            {
+                nodes[i].pos = start_pos[i] + k0_vel[i] * h;
+                nodes[i].vel = start_vel[i] + k0_acc[i] * h;
+            }
+        }
+        compute_soft_forces(body);
+
+        new_positions.resize(count);
+        for (int i = 0; i < count; i++)
+        {
+            if (nodes[i].pinned)
+            {
+                new_positions[i] = start_pos[i];
+                nodes[i].vel = start_vel[i];
+            }
+            else
+            {
+                vec3 k1_vel = nodes[i].vel;
+                vec3 k1_acc = nodes[i].force / nodes[i].mass;
+                new_positions[i] = start_pos[i] + (k0_vel[i] + k1_vel) * (h / 2.0);
+                nodes[i].vel = start_vel[i] + (k0_acc[i] + k1_acc) * (h / 2.0);
+            }
+            nodes[i].pos = start_pos[i]; // put the body back
+        }
+    }
+
+    // leapfrog
+    void velocity_verlet(soft_model &body, double h, std::vector<vec3> &new_positions)
+    {
+        std::vector<soft_node> &nodes = body.nodes;
+        int count = nodes.size();
+
+        compute_soft_forces(body);
+        std::vector<vec3> start_pos(count), start_vel(count), start_acc(count);
+        for (int i = 0; i < count; i++)
+        {
+            start_pos[i] = nodes[i].pos;
+            start_vel[i] = nodes[i].vel;
+            start_acc[i] = nodes[i].force / nodes[i].mass;
+        }
+
+        new_positions.resize(count);
+        for (int i = 0; i < count; i++)
+        {
+            if (nodes[i].pinned)
+            {
+                new_positions[i] = start_pos[i];
+            }
+            else
+            {
+                new_positions[i] = start_pos[i] + start_vel[i] * h + start_acc[i] * (0.5 * h * h);
+                nodes[i].pos = new_positions[i];
+            }
+        }
+
+        compute_soft_forces(body);
+
+        for (int i = 0; i < count; i++)
+        {
+            if (!nodes[i].pinned)
+            {
+                vec3 end_acc = nodes[i].force / nodes[i].mass;
+                nodes[i].vel = start_vel[i] + (start_acc[i] + end_acc) * (0.5 * h);
+            }
+            nodes[i].pos = start_pos[i]; // put the body back
         }
     }
 
@@ -706,7 +815,7 @@ private:
         phy_hit_record rec;
         double closest_so_far = std::numeric_limits<double>::max();
         bool hit = false;
-        // iterate a.springs directly instead of a.get_edges(), so we keep the real node indices (a.u, a.v) of the winning edge
+        // iterate a.springs directly instead of a.get_edges() for real node indices
         int winner_u = -1;
         int winner_v = -1;
 
@@ -738,13 +847,12 @@ private:
             return;
         }
 
-        // a's edge endpoints, blended by how far along the edge the contact point is
+        // blending
         soft_node &a0 = a.nodes[winner_u];
         soft_node &a1 = a.nodes[winner_v];
         double weight_a1 = rec.bay_coord.x();
         double weight_a0 = 1.0 - weight_a1;
 
-        // b's triangle side endpoints, blended the same way instead of reading a single corner
         auto hit_tri = std::static_pointer_cast<phy_soft_tri>(rec.hit_object);
         int side = (int)rec.bay_coord.z();
         soft_node &b0 = b.nodes[hit_tri->index(side)];
@@ -780,9 +888,6 @@ private:
 
         vec3 normal = rec.normal; // points from b toward a
 
-        // push apart to a small resting gap, same as soft_node_collision's rec.p + normal * 0.01.
-        // this runs on every hit, not just an approaching one, since two edges resting right at
-        // the contact distance still need to be kept apart even with no relative velocity.
         double target_gap = 0.01;
         if (rec.t < target_gap)
         {
