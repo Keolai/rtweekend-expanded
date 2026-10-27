@@ -106,6 +106,7 @@ public:
     }
 
     // signed, so a mesh with inward winding gives a negative volume
+    // divergence theorem!
     double volume() const
     {
         point3 c = centroid();

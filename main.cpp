@@ -26,7 +26,7 @@
 #define SIM_RATE_MS 10 //interval
 
 #define RECORDING true
-#define MAX_RECORDING_STEPS 700
+#define MAX_RECORDING_STEPS 800
 
 std::atomic<bool> running{true};
 std::mutex state_mutex;
@@ -193,7 +193,7 @@ int main()
     physics_layer sim;
 
     sim.add_force(vec3(0, -1, 0), 5.0); // gravity
-    sim.set_soft_integrator(soft_integrator::runge_kutta_4);
+    sim.set_soft_integrator(soft_integrator::heuns_method);
 
     // sim.add_vortex_force(vec3(0),vec3(0,1,0),5);
     // sim.add_range_force(vec3(0),2,10);
