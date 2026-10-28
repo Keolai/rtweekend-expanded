@@ -811,14 +811,7 @@ private:
 
     void edge_edge_collision(soft_model &a, soft_model &b)
     {
-        phy_hit_record tmp_rec;
-        phy_hit_record rec;
-        double closest_so_far = std::numeric_limits<double>::max();
-        bool hit = false;
         // iterate a.springs directly instead of a.get_edges() for real node indices
-        int winner_u = -1;
-        int winner_v = -1;
-
         for (spring &s : a.springs)
         {
             if (s.type != spring_type::structural)
@@ -830,26 +823,19 @@ private:
             e.u = &a.nodes[s.a].pos;
             e.v = &a.nodes[s.b].pos;
 
-            if (b.edge_hit(e, tmp_rec))
+            phy_hit_record rec;
+            if (b.edge_hit(e, rec))
             {
-                if (tmp_rec.t < closest_so_far)
-                {
-                    rec = tmp_rec;
-                    hit = true;
-                    closest_so_far = tmp_rec.t;
-                    winner_u = s.a;
-                    winner_v = s.b;
-                }
+                resolve_edge_contact(a, s.a, s.b, b, rec);
             }
         }
-        if (!hit)
-        {
-            return;
-        }
+    }
 
+    void resolve_edge_contact(soft_model &a, int node_u, int node_v, soft_model &b, phy_hit_record &rec)
+    {
         // blending
-        soft_node &a0 = a.nodes[winner_u];
-        soft_node &a1 = a.nodes[winner_v];
+        soft_node &a0 = a.nodes[node_u];
+        soft_node &a1 = a.nodes[node_v];
         double weight_a1 = rec.bay_coord.x();
         double weight_a0 = 1.0 - weight_a1;
 
@@ -915,7 +901,7 @@ private:
 
         vec3 rel_vel = contact_vel_a - contact_vel_b;
         double v_normal = dot(rel_vel, normal);
-        if (v_normal >= 0.0) // already separating, the push above is enough
+        if (v_normal >= 0.0) // already separating
         {
             return;
         }

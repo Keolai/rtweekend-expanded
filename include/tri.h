@@ -275,8 +275,8 @@ private:
         {
             // Degenerate/duplicate UVs: fall back to an arbitrary tangent
             // perpendicular to the face normal.
-            printf("degenerate UV determinant! denom=%e, UVs: (%f,%f) (%f,%f) (%f,%f)\n",
-                   denom, UV[0].x(), UV[0].y(), UV[1].x(), UV[1].y(), UV[2].x(), UV[2].y());
+            //printf("degenerate UV determinant! denom=%e, UVs: (%f,%f) (%f,%f) (%f,%f)\n",
+                   //denom, UV[0].x(), UV[0].y(), UV[1].x(), UV[1].y(), UV[2].x(), UV[2].y());
             vec3 n = unit_vector(cross(edge1, edge2));
             vec3 ref = (std::fabs(n.x()) < 0.999) ? vec3(1, 0, 0) : vec3(0, 1, 0);
             const_tangent = unit_vector(ref - dot(ref, n) * n);
