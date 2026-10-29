@@ -36,7 +36,7 @@ public:
         finalize();
     }
 
-    // flat grid in the xz plane centered on the origin
+    // flat grid in the xz plane centered on the origin like a cloth yay!
     soft_model(double width, double depth, int res_x, int res_z, double node_mass = 0.05, bool use_shear = false)
         : use_shear(use_shear)
     {

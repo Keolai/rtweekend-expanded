@@ -27,7 +27,7 @@
 #define MAX_EMITTERS 5
 #define NEIGHBOR_RADIUS 0.5
 #define SOFT_LOG_INTERVAL 10 // steps between soft body energy prints, 0 = off
-#define SOFT_SUBSTEPS 8
+#define SOFT_SUBSTEPS 2
 
 enum class soft_integrator
 {
@@ -326,7 +326,7 @@ public:
     void soft_step(double dt)
     {
         double sub_dt = dt / SOFT_SUBSTEPS;
-        for (int s = 0; s < SOFT_SUBSTEPS; s++)
+        for (int s = 0; s < SOFT_SUBSTEPS; s++) //this is to prevent penetration
         {
             soft_substep(sub_dt);
         }
