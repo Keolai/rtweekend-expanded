@@ -27,6 +27,7 @@
 #define MAX_EMITTERS 5
 #define NEIGHBOR_RADIUS 0.5
 #define SOFT_LOG_INTERVAL 10 // steps between soft body energy prints, 0 = off
+#define SOFT_SUBSTEPS 8
 
 enum class soft_integrator
 {
@@ -322,8 +323,23 @@ public:
         }
     }
 
-    // plain force based springs, integrated with whatever integrate_soft_node picks, explodes fast w/ bigger dt or stiffer springs
     void soft_step(double dt)
+    {
+        double sub_dt = dt / SOFT_SUBSTEPS;
+        for (int s = 0; s < SOFT_SUBSTEPS; s++)
+        {
+            soft_substep(sub_dt);
+        }
+        if (SOFT_LOG_INTERVAL > 0 && cur_step % SOFT_LOG_INTERVAL == 0)
+        {
+            for (auto &body : soft_bodies)
+            {
+                print_soft_energy(*body);
+            }
+        }
+    }
+
+    void soft_substep(double dt)
     {
         double h = dt / MS_PER_SEC;
         for (int b = 0; b < soft_bodies.size(); b++)
@@ -347,11 +363,6 @@ public:
 
             body.update_centroid();
             body.refit();
-
-            if (SOFT_LOG_INTERVAL > 0 && cur_step % SOFT_LOG_INTERVAL == 0)
-            {
-                print_soft_energy(body);
-            }
         }
         for (int b = 0; b < soft_bodies.size(); b++)
         {

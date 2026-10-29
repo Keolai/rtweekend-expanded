@@ -26,7 +26,7 @@
 #define SIM_RATE_MS 10 //interval
 
 #define RECORDING true
-#define MAX_RECORDING_STEPS 600
+#define MAX_RECORDING_STEPS 800
 
 std::atomic<bool> running{true};
 std::mutex state_mutex;
@@ -194,7 +194,9 @@ int main()
 
     sim.add_force(vec3(0, -1, 0), 5.0); // gravity
     sim.set_soft_integrator(soft_integrator::runge_kutta_4);
-
+    // the chicken-on-jelly collision needs the jelly far stiffer than 10ms/RK4 can handle in one
+    // step without exploding; substepping runs soft-body integration at a finer internal rate
+    // (raises the stiffness*dt^2/mass stability ceiling) without touching the rest of the sim
     // sim.add_vortex_force(vec3(0),vec3(0,1,0),5);
     // sim.add_range_force(vec3(0),2,10);
 
@@ -244,25 +246,23 @@ int main()
     // sim.connect_soft_model(cloth, smile_mat, world);
 
     // closed mesh
-    auto jelly = sim.add_soft_model_to_world("models/rectangle.obj", 1.0);
+    auto jelly = sim.add_soft_model_to_world("models/chicken.obj", 1.0);
     //// set_stiffness(double stretch, double bend, double damping)
     // the original (40, 10, 1) was tuned for the 8-node cube
-    //jelly->set_stiffness(3000, 800, 6);
-    jelly->set_stiffness(40,10,1); //rectangles and such
-    jelly->pressure = 80; // higher stiffness needs more pressure, but too high causes explosion
-    vec3 jelly_pos(0, 4, 0);
+    jelly->set_stiffness(3000, 800, 6);
+    //jelly->set_stiffness(40,10,1); //rectangles and such
+    jelly->pressure = 500; // higher stiffness needs more pressure, but too high causes explosion
+    vec3 jelly_pos(0, 9, 0);
     jelly->position(jelly_pos);
-    sim.connect_soft_model(jelly, second_mat, world);
+    sim.connect_soft_model(jelly, chicken_mat, world);
 
-     auto jelly2 = sim.add_soft_model_to_world("models/rotated_rectangle.obj", 1.0);
-    //// set_stiffness(double stretch, double bend, double damping)
-    // the original (40, 10, 1) was tuned for the 8-node cube
-    //jelly->set_stiffness(3000, 800, 6);
-    jelly2->set_stiffness(40,10,1); //rectangles and such
-    jelly2->pressure = 80; // higher stiffness needs more pressure, but too high causes explosion
-    vec3 jelly2_pos(0, 1, 0);
-    jelly2->position(jelly2_pos);
-    sim.connect_soft_model(jelly2, tex_mat, world);
+    auto big_jelly = sim.add_soft_model_to_world("models/big_jelly.obj", 1.0);
+
+    big_jelly->set_stiffness(10000, 2500, 12);
+    big_jelly->pressure = 4000; // higher stiffness needs more pressure, but too high causes explosion
+    vec3 big_jelly_pos(0, 4, 0);
+    big_jelly->position(big_jelly_pos);
+    sim.connect_soft_model(big_jelly, second_mat, world);
 
     // particle_emitter& sec_emitter = sim.add_particle_emitter(vec3(0.5,4,0),vec3(0,-1,0),1,1,20);
     // auto sec_vis_emitter = std::make_shared<metaball>(sec_emitter.particles,second_mat, 0.2);
@@ -296,7 +296,7 @@ int main()
     cam.max_depth = 25;
 
     cam.vfov = 70;
-    cam.lookfrom = point3(5, 5, 4); // 0 5 10 default
+    cam.lookfrom = point3(8, 10, 4); // 0 5 10 default
     cam.lookat = point3(0, 0, 0);
     cam.vup = vec3(0, 1, 0);
     cam.ambient = color(0.1);
