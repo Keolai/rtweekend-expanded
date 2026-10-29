@@ -236,12 +236,12 @@ int main()
     // world.add(vis_emitter);
 
     //SOFT BODY DEMO
-    // auto cloth = sim.add_cloth_to_world(4.0, 4.0, 15, 15, 1.0);
-    // // set_stiffness(double stretch, double bend, double damping)
-    // cloth->set_stiffness(80, 20, 2);
-    // vec3 cloth_pos(0, 14, 0);
-    // cloth->position(cloth_pos);
-    // sim.connect_soft_model(cloth, smile_mat, world);
+    auto cloth = sim.add_cloth_to_world(4.0, 4.0, 15, 15, 1.0, true);
+    // set_stiffness(double stretch, double bend, double damping)
+    cloth->set_stiffness(80, 20, 2, 2);
+    vec3 cloth_pos(0, 8, 0);
+    cloth->position(cloth_pos);
+    sim.connect_soft_model(cloth, smile_mat, world);
 
     // closed mesh
     auto jelly = sim.add_soft_model_to_world("models/chicken.obj", 1.0, true);

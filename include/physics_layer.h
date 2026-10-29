@@ -67,9 +67,9 @@ public:
         return new_body;
     }
 
-    std::shared_ptr<soft_model> add_cloth_to_world(double width, double depth, int res_x, int res_z, double node_mass = 0.5)
+    std::shared_ptr<soft_model> add_cloth_to_world(double width, double depth, int res_x, int res_z, double node_mass = 0.5, bool use_shear = false)
     {
-        auto new_body = std::make_shared<soft_model>(width, depth, res_x, res_z, node_mass);
+        auto new_body = std::make_shared<soft_model>(width, depth, res_x, res_z, node_mass, use_shear);
         simulation.add_soft_body(new_body);
         return new_body;
     }
