@@ -16,7 +16,8 @@ struct soft_node
 enum class spring_type
 {
     structural, // along a mesh edge - closer to stretch springs
-    bend        // across two triangles - torsional
+    bend,       // across two triangles - torsional
+    shear       // same pair as bend, but tuned separately for in-plane shear resistance
 };
 
 struct spring

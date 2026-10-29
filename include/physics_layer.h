@@ -60,9 +60,9 @@ public:
     }
 
     // returned so we can mess with params
-    std::shared_ptr<soft_model> add_soft_model_to_world(const std::string &file_path, double node_mass = 0.5)
+    std::shared_ptr<soft_model> add_soft_model_to_world(const std::string &file_path, double node_mass = 0.5, bool use_shear = false)
     {
-        auto new_body = std::make_shared<soft_model>(file_path, node_mass);
+        auto new_body = std::make_shared<soft_model>(file_path, node_mass, use_shear);
         simulation.add_soft_body(new_body);
         return new_body;
     }
@@ -74,6 +74,7 @@ public:
         return new_body;
     }
 
+    //this is weird, maybe change to fit the other connector functions but who cares tbh
     std::shared_ptr<soft_mesh> connect_soft_model(std::shared_ptr<soft_model> body, std::shared_ptr<material> mat, hittable_list &world)
     {
         auto render_mesh = std::make_shared<soft_mesh>(body->faces, body->face_uvs, body->nodes, mat);

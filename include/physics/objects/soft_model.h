@@ -24,18 +24,21 @@ public:
 
     double stretch_k = 200.0;
     double bend_k = 20.0;
+    double shear_k = 20.0;
     double spring_damping = 0.5;
     double pressure = 0.0; // only for closed meshes, explodes open ones LOL
     double rest_volume = 0.0;
 
-    soft_model(const std::string &file_path, double node_mass = 0.05) : file_path(file_path)
+    soft_model(const std::string &file_path, double node_mass = 0.05, bool use_shear = false)
+        : file_path(file_path), use_shear(use_shear)
     {
         load_soft_model(node_mass);
         finalize();
     }
 
     // flat grid in the xz plane centered on the origin
-    soft_model(double width, double depth, int res_x, int res_z, double node_mass = 0.05)
+    soft_model(double width, double depth, int res_x, int res_z, double node_mass = 0.05, bool use_shear = false)
+        : use_shear(use_shear)
     {
         make_cloth(width, depth, res_x, res_z, node_mass);
         finalize();
@@ -51,14 +54,33 @@ public:
         return soft_model_node->bounding_box();
     }
 
-    void set_stiffness(double stretch, double bend, double damping)
+    void set_stiffness(double stretch, double bend, double damping, double shear = -1.0)
     {
         stretch_k = stretch;
         bend_k = bend;
         spring_damping = damping;
+        if (shear < 0.0)
+        {
+            shear_k = bend_k;
+        }
+        else
+        {
+            shear_k = shear;
+        }
         for (auto &s : springs)
         {
-            s.stiffness = (s.type == spring_type::structural) ? stretch_k : bend_k;
+            if (s.type == spring_type::structural)
+            {
+                s.stiffness = stretch_k;
+            }
+            else if (s.type == spring_type::bend)
+            {
+                s.stiffness = bend_k;
+            }
+            else
+            {
+                s.stiffness = shear_k;
+            }
             s.damping = spring_damping;
         }
     }
@@ -197,6 +219,7 @@ public:
 private:
     point3 pos = vec3(0);
     std::string file_path;
+    bool use_shear;
     std::shared_ptr<phy_bvh_node> soft_model_node;
     std::vector<edge> edges;
 
@@ -333,7 +356,7 @@ private:
         }
         soft_model_node = std::make_shared<phy_bvh_node>(triangles, 0, triangles.size());
 
-        // structural springs are exactly the unique mesh edges, pointing at the nodes keeps the edges live
+        // structural springs are exactly the unique mesh edges, pointing at the nodes keeps the edges live!
         for (auto &s : springs)
         {
             if (s.type == spring_type::structural)
@@ -354,7 +377,18 @@ private:
         s.a = a;
         s.b = b;
         s.rest_length = (nodes[a].pos - nodes[b].pos).length();
-        s.stiffness = (type == spring_type::structural) ? stretch_k : bend_k;
+        if (type == spring_type::structural)
+        {
+            s.stiffness = stretch_k;
+        }
+        else if (type == spring_type::bend)
+        {
+            s.stiffness = bend_k;
+        }
+        else
+        {
+            s.stiffness = shear_k;
+        }
         s.damping = spring_damping;
         s.type = type;
         springs.push_back(s);
@@ -391,6 +425,10 @@ private:
                     if (a != b && !edge_opposites.count(std::make_pair(a, b)) && bend_pairs.insert(std::make_pair(a, b)).second)
                     {
                         add_spring(a, b, spring_type::bend);
+                        if (use_shear)
+                        {
+                            add_spring(a, b, spring_type::shear);
+                        }
                     }
                 }
             }
