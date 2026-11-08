@@ -50,8 +50,8 @@ public:
         return new_sphere->id;
     }
 
-    int add_mesh_to_world(const std::string &file_path, bool is_static){
-        auto new_mesh = std::make_shared<model>(file_path);
+    int add_mesh_to_world(const std::string &file_path, bool is_static, bool is_rigid_body = false){
+        auto new_mesh = std::make_shared<model>(file_path, is_rigid_body);
         new_mesh->is_static = is_static;
 
         simulation.world.add(new_mesh);
@@ -169,6 +169,9 @@ public:
             if (simulation.object_is_mapped(cur_physics_id)){
                 vec3 new_position = simulation.object_position(cur_physics_id);
                 cur_render_object->position(new_position);
+                if (simulation.object_is_rigid(cur_physics_id)){
+                    //share rotations
+                }
             }
              //printf("NEW POSITION: %f, %f, %f\n",new_position.x(),new_position.y(),new_position.z());
         }

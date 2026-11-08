@@ -64,7 +64,7 @@ public:
             // iterate through list
             auto cur_object = world.objects[i];
 
-            if (cur_object && !cur_object->is_static && cur_object->is_rigid_body) // object can move
+            if (cur_object && !cur_object->is_static && !cur_object->is_rigid_body) // object can move
             {
                 cur_object->update_state(); // copy new state to old state
                 state new_state = state();
@@ -91,7 +91,7 @@ public:
             // check for collision
             // react to collision
             auto cur_object = world.objects[i];
-            if (cur_object && !cur_object->is_static) // object can move
+            if (cur_object && !cur_object->is_static && !cur_object->is_rigid_body) // object can move and isnt in a rigid body
             {
                 std::vector<vec3> object_vertices = cur_object->get_vertices();
                 vec3 tmp_pos = cur_object->next_state.position;
@@ -216,6 +216,7 @@ public:
         rigid_soft_collision(dt);
         particle_step(dt);
         soft_step(dt);
+        rigid_body_step(dt);
         // std::cout << duration.count()  << " ns\n";
         cur_step++;
         return duration.count();
@@ -223,6 +224,9 @@ public:
 
     void rigid_body_step(double dt){
         //rigid body stuff
+        for (int i = 0; i < world.size(); i++){
+            auto cur_object = world.objects[i];
+        }
     }
 
     // rigid->soft
@@ -438,10 +442,25 @@ public:
         return cur_object->current_state.position;
     }
 
+    quat object_rotation(int id){
+        auto cur_object = idMap[id];
+        if (!cur_object)
+        {
+            printf("ID NOT FOUND: %d\n", id);
+            return quat();
+        }
+        state new_state = cur_object->current_state;
+        return cur_object->current_state.orientation;
+    }
+
     bool object_is_mapped(int id)
     {
         auto cur_object = idMap[id];
         return (bool)cur_object;
+    }
+
+    bool object_is_rigid(int id){
+        return idMap[id]->is_rigid_body;
     }
 
 private:
