@@ -52,6 +52,11 @@ public:
 
   virtual bool hit(const ray &r, interval ray_t, hit_record &rec) const = 0;
 
+  virtual void transform(vec3 &pos, const quat &q, const point3 &pivot)
+  {
+    position(pos);
+  }
+
   void find_world_tangent(const ray &r, hit_record &rec, texture &tex) const
   {
     color texel = tex.get_color_at_coordinate(rec.texture_sample_point.x(), rec.texture_sample_point.y());

@@ -28,7 +28,8 @@ public:
         total_ns += simulation.step(delta);
     }
 
-    double get_steps(){
+    double get_steps()
+    {
         return steps;
     }
 
@@ -41,21 +42,26 @@ public:
         return new_sphere->id;
     }
 
-    int add_sphere_to_world(const vec3 &pos,const vec3 &v, double radius)
+    int add_sphere_to_world(const vec3 &pos, const vec3 &v, double radius)
     {
-        auto new_sphere = std::make_shared<phy_sphere>(pos,v, radius);
+        auto new_sphere = std::make_shared<phy_sphere>(pos, v, radius);
         new_sphere->is_static = false;
 
         simulation.world.add(new_sphere);
         return new_sphere->id;
     }
 
-    int add_mesh_to_world(const std::string &file_path, bool is_static, bool is_rigid_body = false){
+    // also adds rigid bodies
+    int add_mesh_to_world(const std::string &file_path, bool is_static, bool is_rigid_body = false, double mass = 1)
+    {
         auto new_mesh = std::make_shared<model>(file_path, is_rigid_body);
         new_mesh->is_static = is_static;
 
         simulation.world.add(new_mesh);
-        new_mesh->update_tri_id(new_mesh->id); //IMPORTANT
+        new_mesh->update_tri_id(new_mesh->id); // IMPORTANT
+        if (is_rigid_body){
+            new_mesh->set_mass(mass);
+        }
         return new_mesh->id;
     }
 
@@ -74,7 +80,7 @@ public:
         return new_body;
     }
 
-    //this is weird, maybe change to fit the other connector functions but who cares tbh
+    // this is weird, maybe change to fit the other connector functions but who cares tbh
     std::shared_ptr<soft_mesh> connect_soft_model(std::shared_ptr<soft_model> body, std::shared_ptr<material> mat, hittable_list &world)
     {
         auto render_mesh = std::make_shared<soft_mesh>(body->faces, body->face_uvs, body->nodes, mat);
@@ -99,21 +105,24 @@ public:
         return;
     }
 
-    //vec3 position, vec3 axis, double field_strength
-    void add_vortex_force(const vec3 &pos, const vec3 &axis, double strength){
-        auto new_force = std::make_shared<vortex_force>(pos,axis,strength);
+    // vec3 position, vec3 axis, double field_strength
+    void add_vortex_force(const vec3 &pos, const vec3 &axis, double strength)
+    {
+        auto new_force = std::make_shared<vortex_force>(pos, axis, strength);
         simulation.forces.push_back(new_force);
         return;
     }
 
     // range_force(vec3 source, double target_distance, double strength)
-    void add_range_force(const vec3 &pos, double distance, double strength){
-        auto new_force = std::make_shared<range_force>(pos,distance,strength);
+    void add_range_force(const vec3 &pos, double distance, double strength)
+    {
+        auto new_force = std::make_shared<range_force>(pos, distance, strength);
         simulation.forces.push_back(new_force);
         return;
     }
 
-    void add_point_force(const vec3 &pos, double strength){
+    void add_point_force(const vec3 &pos, double strength)
+    {
         auto new_force = std::make_shared<point_force>();
 
         new_force->strength = strength;
@@ -123,34 +132,40 @@ public:
         return;
     }
 
-    void add_wind_resistance(double coefficient, double area){
+    void add_wind_resistance(double coefficient, double area)
+    {
         simulation.forces.push_back(std::make_shared<wind_resistance>(0.47, pi * 1.0 * 1.0));
     }
 
-    particle_emitter& add_particle_emitter(const vec3 &position, const vec3 &direction, double spread, double speed, double flow){
+    particle_emitter &add_particle_emitter(const vec3 &position, const vec3 &direction, double spread, double speed, double flow)
+    {
         particle_emitter new_emitter = particle_emitter(position, direction, spread, speed, 20, flow);
         simulation.emitters.emplace_back(new_emitter);
         return simulation.emitters.back();
     }
 
-     particle_emitter& add_particle_emitter(const vec3 &position, const vec3 &direction, double spread, double speed, double flow, bool is_flock){
+    particle_emitter &add_particle_emitter(const vec3 &position, const vec3 &direction, double spread, double speed, double flow, bool is_flock)
+    {
         particle_emitter new_emitter = particle_emitter(position, direction, spread, speed, 20, flow);
         new_emitter.is_flock = is_flock;
-        new_emitter.flock.rest_density = estimate_rest_density(new_emitter.flock.neighbor_radius, 0.27, new_emitter.flock.particle_mass); 
+        new_emitter.flock.rest_density = estimate_rest_density(new_emitter.flock.neighbor_radius, 0.27, new_emitter.flock.particle_mass);
         simulation.emitters.emplace_back(new_emitter);
         return simulation.emitters.back();
     }
 
-    void connect_objects(int renderId, int physicsId){
-        idMap.insert({renderId,physicsId});
+    void connect_objects(int renderId, int physicsId)
+    {
+        idMap.insert({renderId, physicsId});
         simulation.add_objects_to_map();
     }
 
-    void set_render_objects(hittable_list &world){
+    void set_render_objects(hittable_list &world)
+    {
         render_world = world;
     }
 
-    void update_render(){
+    void update_render()
+    {
         std::lock_guard<std::mutex> lock(state_mutex_);
         for (auto &link : soft_links)
         {
@@ -160,24 +175,32 @@ public:
                 link.first->set_positions(*nodes);
             }
         }
-        for(int i = 0; i < render_world.objects.size(); i++){
+        for (int i = 0; i < render_world.objects.size(); i++)
+        {
             auto cur_render_object = render_world.objects[i];
             cur_render_object->refresh();
             int cur_render_id = cur_render_object->id;
             int cur_physics_id = idMap[cur_render_id];
-             //printf("render id %d -> physics id %d\n", cur_render_id, cur_physics_id);
-            if (simulation.object_is_mapped(cur_physics_id)){
+
+            if (simulation.object_is_mapped(cur_physics_id))
+            {
                 vec3 new_position = simulation.object_position(cur_physics_id);
-                cur_render_object->position(new_position);
-                if (simulation.object_is_rigid(cur_physics_id)){
-                    //share rotations
+                quat q;
+                point3 pivot;
+                if (simulation.object_rigid_transform(cur_physics_id, q, pivot))
+                {
+                    cur_render_object->transform(new_position, q, pivot);
+                }
+                else
+                {
+                    cur_render_object->position(new_position);
                 }
             }
-             //printf("NEW POSITION: %f, %f, %f\n",new_position.x(),new_position.y(),new_position.z());
         }
     }
 
-    int get_step(){
+    int get_step()
+    {
         return simulation.cur_step;
     }
 
@@ -185,9 +208,9 @@ private:
     sim simulation = sim();
     hittable_list render_world = hittable_list();
 
-    std::map<int,int> idMap; //should be renderId, then physicsId
+    std::map<int, int> idMap;                                           // should be renderId, then physicsId
     std::vector<std::pair<std::shared_ptr<soft_mesh>, int>> soft_links; // render mesh, physics id
-    std::mutex state_mutex_;   // now owned here, not a free global
+    std::mutex state_mutex_;                                            // now owned here, not a free global
 };
 
 #endif

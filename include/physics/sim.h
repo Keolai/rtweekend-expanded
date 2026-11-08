@@ -222,9 +222,11 @@ public:
         return duration.count();
     }
 
-    void rigid_body_step(double dt){
-        //rigid body stuff
-        for (int i = 0; i < world.size(); i++){
+    void rigid_body_step(double dt)
+    {
+        // rigid body stuff
+        for (int i = 0; i < world.size(); i++)
+        {
             auto cur_object = world.objects[i];
         }
     }
@@ -334,7 +336,7 @@ public:
     void soft_step(double dt)
     {
         double sub_dt = dt / SOFT_SUBSTEPS;
-        for (int s = 0; s < SOFT_SUBSTEPS; s++) //this is to prevent penetration
+        for (int s = 0; s < SOFT_SUBSTEPS; s++) // this is to prevent penetration
         {
             soft_substep(sub_dt);
         }
@@ -442,7 +444,20 @@ public:
         return cur_object->current_state.position;
     }
 
-    quat object_rotation(int id){
+    bool object_rigid_transform(int id, quat &q, point3 &pivot)
+    {
+        auto rigid = std::dynamic_pointer_cast<model>(idMap[id]);
+        if (!rigid || rigid->is_static)
+        {
+            return false;
+        }
+        q = rigid->current_state.orientation;
+        pivot = rigid->com_local();
+        return true;
+    }
+
+    quat object_rotation(int id)
+    {
         auto cur_object = idMap[id];
         if (!cur_object)
         {
@@ -459,7 +474,8 @@ public:
         return (bool)cur_object;
     }
 
-    bool object_is_rigid(int id){
+    bool object_is_rigid(int id)
+    {
         return idMap[id]->is_rigid_body;
     }
 
@@ -688,7 +704,7 @@ private:
             start_vel[i] = nodes[i].vel;
         }
 
-        std::vector<vec3> k_vel[4], k_acc[4]; //velocity and acceleration
+        std::vector<vec3> k_vel[4], k_acc[4]; // velocity and acceleration
         const double stage_step[4] = {0.0, 0.5 * h, 0.5 * h, h};
         for (int stage = 0; stage < 4; stage++)
         {
@@ -742,7 +758,7 @@ private:
             k0_acc[i] = nodes[i].pinned ? vec3(0) : nodes[i].force / nodes[i].mass;
         }
 
-        for (int i = 0; i < count; i++) 
+        for (int i = 0; i < count; i++)
         {
             if (!nodes[i].pinned)
             {
