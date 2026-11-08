@@ -44,6 +44,20 @@ struct quat
         return quat(w / n, x / n, y / n, z / n);
     }
 
+    // inverse rotation for a unit quat
+    quat conjugate() const
+    {
+        return quat(w, -x, -y, -z);
+    }
+
+    // q' = q + 0.5 * h * (0, omega) * q, omega is world space angular velocity in rad/s
+    static quat integrate(const quat &q, const vec3 &omega, double h)
+    {
+        quat spin = quat(0, omega.x(), omega.y(), omega.z()) * q;
+        double s = 0.5 * h;
+        return quat(q.w + s * spin.w, q.x + s * spin.x, q.y + s * spin.y, q.z + s * spin.z).normalized();
+    }
+
     // Rotate a vector: v' = v + 2w(u x v) + 2 u x (u x v)
     vec3 rotate(const vec3 &v) const
     {

@@ -154,6 +154,12 @@ public:
         update();
     }
 
+    void set_orientation(const quat &q)
+    {
+        orientation = q.normalized();
+        update();
+    }
+
     void set_pivot(const point3 &p)
     {
         pivot = p;

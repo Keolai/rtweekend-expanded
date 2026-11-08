@@ -211,6 +211,95 @@ public:
         }
     }
 
+    // RIGID BODY STUFF =========================
+
+    // center of mass is vertex average
+    //inertia = solid box from the vertex aabb (diagonal in body space)
+    void set_mass(double m)
+    {
+        mass = m;
+        if (vertices.empty())
+        {
+            return;
+        }
+
+        point3 sum(0, 0, 0);
+        vec3 lo = vertices[0];
+        vec3 hi = vertices[0];
+        for (const vec3 &v : vertices)
+        {
+            sum += v;
+            lo = vec3(std::min(lo.x(), v.x()), std::min(lo.y(), v.y()), std::min(lo.z(), v.z()));
+            hi = vec3(std::max(hi.x(), v.x()), std::max(hi.y(), v.y()), std::max(hi.z(), v.z()));
+        }
+        pivot = sum / vertices.size();
+
+        vec3 size = hi - lo;
+        double x2 = size.x() * size.x();
+        double y2 = size.y() * size.y();
+        double z2 = size.z() * size.z();
+        vec3 inertia = (m / 12.0) * vec3(y2 + z2, x2 + z2, x2 + y2);
+        inv_inertia_body = vec3(safe_inverse(inertia.x()), safe_inverse(inertia.y()), safe_inverse(inertia.z()));
+    }
+
+    point3 com_local() const
+    {
+        return pivot;
+    }
+
+    point3 com_world(const state &s) const
+    {
+        return pivot + s.position;
+    }
+
+    // world space inverse inertia applied to v: R * I_body^-1 * R^T * v
+    vec3 apply_inv_inertia(const state &s, const vec3 &v) const
+    {
+        vec3 body_v = s.orientation.conjugate().rotate(v);
+        return s.orientation.rotate(inv_inertia_body * body_v);
+    }
+
+    // obj space to world space
+    vec3 world_point(const state &s, const vec3 &local) const
+    {
+        return pivot + s.orientation.rotate(local - pivot) + s.position;
+    }
+
+    // world space to obj space
+    vec3 local_point(const state &s, const vec3 &world) const
+    {
+        return pivot + s.orientation.conjugate().rotate(world - s.position - pivot);
+    }
+
+    std::vector<vec3> world_vertices(const state &s) const
+    {
+        std::vector<vec3> out;
+        out.reserve(vertices.size());
+        for (const vec3 &v : vertices)
+        {
+            out.push_back(world_point(s, v));
+        }
+        return out;
+    }
+
+    // moves the collision triangles to match s
+    void set_transform(const state &s)
+    {
+        pos = s.position;
+        for (auto &t : triangles)
+        {
+            auto tri = std::static_pointer_cast<phy_tri>(t);
+            tri->set_pivot(pivot);
+            tri->set_orientation(s.orientation);
+            tri->position(pos);
+        }
+        if (model_node)
+        {
+            model_node->refit();
+        }
+    }
+    // END OF RIGID BODY STUFF ======================
+    
     void update_state() override
     {
         copy(next_state, current_state); // copy the next predicted state to the new state;
@@ -271,7 +360,17 @@ private:
     std::shared_ptr<phy_bvh_node> model_node;
     std::vector<edge> edges; // original edges
 
-    point3 pivot;
+    point3 pivot;                          // also the center of mass once set_mass is called
+    vec3 inv_inertia_body = vec3(0, 0, 0); // diagonal, 0 on an axis means it can't spin that way
+
+    static double safe_inverse(double v)
+    {
+        if (v < 1e-12)
+        {
+            return 0.0;
+        }
+        return 1.0 / v;
+    }
 
     int parse_face_index(const std::string &token)
     {
