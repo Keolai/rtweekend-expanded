@@ -233,12 +233,18 @@ public:
                 continue;
             }
             auto cur_model = std::static_pointer_cast<model>(cur_object);
-            cur_model->update_state(); 
+            cur_model->update_state();
             state next = cur_model->current_state;
             double h = dt / MS_PER_SEC;
-            
-            //INTEGRATE TODO: add support for other integration schemes
 
+            // INTEGRATE TODO: add support for other integration schemes
+
+            vec3 f = get_net_force(next.position, next.velocity, cur_model->mass);
+            next.velocity += (f / cur_model->mass) * h;
+            next.position += next.velocity * h;
+            next.orientation = quat::integrate(next.orientation, next.angular_velocity, h);
+
+            //now loop, add impulses etc...
         }
     }
 
