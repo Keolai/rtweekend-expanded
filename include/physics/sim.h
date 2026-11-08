@@ -64,7 +64,7 @@ public:
             // iterate through list
             auto cur_object = world.objects[i];
 
-            if (cur_object && !cur_object->is_static) // object can move
+            if (cur_object && !cur_object->is_static && cur_object->is_rigid_body) // object can move
             {
                 cur_object->update_state(); // copy new state to old state
                 state new_state = state();
@@ -219,6 +219,10 @@ public:
         // std::cout << duration.count()  << " ns\n";
         cur_step++;
         return duration.count();
+    }
+
+    void rigid_body_step(double dt){
+        //rigid body stuff
     }
 
     // rigid->soft

@@ -22,6 +22,7 @@ public:
     int model_id = -1;
 
     model(const std::string &file_path) : file_path(file_path) { load_model(); }
+    model(const std::string &file_path, bool is_rigid_body) : file_path(file_path), phy_hittable(is_rigid_body) { load_model(); }
     model(int id) : model_id(id) {}
     model(std::vector<std::shared_ptr<phy_hittable>> &tris, int id) : model_id(id) { triangles = tris; }
 
@@ -299,7 +300,7 @@ public:
         }
     }
     // END OF RIGID BODY STUFF ======================
-    
+
     void update_state() override
     {
         copy(next_state, current_state); // copy the next predicted state to the new state;

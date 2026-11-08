@@ -25,7 +25,6 @@ public:
     point3 p;
     vec3 normal;
     std::shared_ptr<phy_hittable> hit_object = nullptr;
-
     vec3 bay_coord;
     int node_index;
     vec3 velocity;
@@ -70,6 +69,9 @@ public:
 
     virtual void update_state() = 0;
     bool is_static = true; // dont move!
+    bool is_rigid_body = false;
+    phy_hittable(bool is_rigid_body) : is_rigid_body(is_rigid_body){}
+    phy_hittable(){}
 protected:
     // closest contact between e and the 3 sides of a triangle, within EDGE_THICKNESS.
     // rec.t is the distance, rec.bay_coord is (along e, along the side, which side), the side runs from corner z to corner (z + 1) % 3
