@@ -52,15 +52,23 @@ public:
     }
 
     // also adds rigid bodies
-    int add_mesh_to_world(const std::string &file_path, bool is_static, bool is_rigid_body = false, double mass = 1)
+    int add_mesh_to_world(const std::string &file_path, bool is_static, bool is_rigid_body = false, double mass = 1,
+                          const vec3 &pos = vec3(0), const vec3 &vel = vec3(0), const vec3 &ang_vel = vec3(0))
     {
         auto new_mesh = std::make_shared<model>(file_path, is_rigid_body);
         new_mesh->is_static = is_static;
 
         simulation.world.add(new_mesh);
         new_mesh->update_tri_id(new_mesh->id); // IMPORTANT
-        if (is_rigid_body){
+        if (is_rigid_body)
+        {
+            new_mesh->is_static = false;
             new_mesh->set_mass(mass);
+            new_mesh->current_state.position = pos;
+            new_mesh->current_state.velocity = vel;
+            new_mesh->current_state.angular_velocity = ang_vel;
+            copy(new_mesh->current_state, new_mesh->next_state);
+            new_mesh->set_transform(new_mesh->current_state);
         }
         return new_mesh->id;
     }
