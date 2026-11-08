@@ -213,10 +213,10 @@ public:
         auto stop = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(
             stop - start);
+        rigid_body_step(dt);
         rigid_soft_collision(dt);
         particle_step(dt);
         soft_step(dt);
-        rigid_body_step(dt);
         // std::cout << duration.count()  << " ns\n";
         cur_step++;
         return duration.count();
@@ -228,6 +228,17 @@ public:
         for (int i = 0; i < world.size(); i++)
         {
             auto cur_object = world.objects[i];
+            if (!cur_object || !cur_object->is_rigid_body || cur_object->is_static)
+            {
+                continue;
+            }
+            auto cur_model = std::static_pointer_cast<model>(cur_object);
+            cur_model->update_state(); 
+            state next = cur_model->current_state;
+            double h = dt / MS_PER_SEC;
+            
+            //INTEGRATE TODO: add support for other integration schemes
+
         }
     }
 
@@ -447,7 +458,7 @@ public:
     bool object_rigid_transform(int id, quat &q, point3 &pivot)
     {
         auto rigid = std::dynamic_pointer_cast<model>(idMap[id]);
-        if (!rigid || rigid->is_static)
+        if (!rigid || !rigid->is_rigid_body || rigid->is_static) // make sure the body actually moves
         {
             return false;
         }
@@ -465,7 +476,7 @@ public:
             return quat();
         }
         state new_state = cur_object->current_state;
-        return cur_object->current_state.orientation;
+        return new_state.orientation;
     }
 
     bool object_is_mapped(int id)
