@@ -38,6 +38,17 @@ enum class soft_integrator
     velocity_verlet      // leapfrog (kick-drift-kick), needs the whole body
 };
 
+#define RIGID_SKIN 0.01 // gap a rigid body is pushed back to when it gets closer than this
+#define RIGID_IMPULSE_PASSES 3
+
+struct rigid_contact
+{
+    vec3 p;     // world space contact point
+    vec3 n;     // unit, points from the other object toward the rigid body
+    double gap; // distance between the two along n at the start of the step
+    std::shared_ptr<phy_hittable> other;
+};
+
 class sim
 {
 public:
@@ -224,7 +235,7 @@ public:
 
     void rigid_body_step(double dt)
     {
-        // rigid body stuff
+        double h = dt / MS_PER_SEC;
         for (int i = 0; i < world.size(); i++)
         {
             auto cur_object = world.objects[i];
@@ -235,16 +246,207 @@ public:
             auto cur_model = std::static_pointer_cast<model>(cur_object);
             cur_model->update_state();
             state next = cur_model->current_state;
-            double h = dt / MS_PER_SEC;
 
             // INTEGRATE TODO: add support for other integration schemes
-
             vec3 f = get_net_force(next.position, next.velocity, cur_model->mass);
             next.velocity += (f / cur_model->mass) * h;
             next.position += next.velocity * h;
             next.orientation = quat::integrate(next.orientation, next.angular_velocity, h);
 
-            //now loop, add impulses etc...
+            std::vector<rigid_contact> contacts;
+            vertex_face_contacts(*cur_model, i, next, contacts);
+            face_vertex_contacts(*cur_model, i, next, contacts);
+
+            if (!contacts.empty())
+            {
+                // sequential impulses to let things settle
+                for (int pass = 0; pass < RIGID_IMPULSE_PASSES; pass++)
+                {
+                    for (rigid_contact &c : contacts)
+                    {
+                        rigid_contact_impulse(*cur_model, next, c);
+                    }
+                }
+
+                // redo the move from the start pose with the new velocities
+                next.position = cur_model->current_state.position + next.velocity * h;
+                next.orientation = quat::integrate(cur_model->current_state.orientation, next.angular_velocity, h);
+
+                // only push out when closer than the skin to prevent creep
+                rigid_contact *closest = &contacts[0];
+                for (rigid_contact &c : contacts)
+                {
+                    if (c.gap < closest->gap)
+                    {
+                        closest = &c;
+                    }
+                }
+                if (closest->gap < RIGID_SKIN)
+                {
+                    next.position += closest->n * (RIGID_SKIN - closest->gap);
+                }
+            }
+
+            copy(next, cur_model->next_state);
+            cur_model->set_transform(cur_model->next_state); // collision faces follow the body
+        }
+    }
+
+    void vertex_face_contacts(model &body, int body_index, state &next, std::vector<rigid_contact> &contacts)
+    {
+        std::vector<vec3> verts = body.get_vertices();
+        for (int k = 0; k < verts.size(); k++)
+        {
+            vec3 start = body.world_point(body.current_state, verts[k]);
+            vec3 end = body.world_point(next, verts[k]);
+            vec3 direction = end - start;
+            double length = direction.length();
+            if (length < 1e-12)
+            {
+                continue;
+            }
+            direction = direction / length;
+            ray r = ray(start, direction);
+
+            // DO NOT USE THE BVH
+            phy_hit_record rec;
+            phy_hit_record temp_rec;
+            std::shared_ptr<phy_hittable> hit_object;
+            double closest_so_far = length + RIGID_SKIN;
+            for (int j = 0; j < world.size(); j++)
+            {
+                if (j == body_index || !world.objects[j])
+                {
+                    continue;
+                }
+                if (world.objects[j]->hit(r, interval(0.001, closest_so_far), temp_rec))
+                {
+                    closest_so_far = temp_rec.t;
+                    rec = temp_rec;
+                    hit_object = world.objects[j];
+                }
+            }
+
+            if (hit_object)
+            {
+                rigid_contact c;
+                c.p = rec.p;
+                c.n = rec.normal; // already faces back toward the vertex
+                c.gap = rec.t * -dot(direction, rec.normal);
+                c.other = hit_object;
+                contacts.push_back(c);
+            }
+        }
+    }
+
+   //for spikes
+    void face_vertex_contacts(model &body, int body_index, state &next, std::vector<rigid_contact> &contacts)
+    {
+        for (int j = 0; j < world.size(); j++)
+        {
+            if (j == body_index)
+            {
+                continue;
+            }
+            auto other = std::dynamic_pointer_cast<model>(world.objects[j]);
+            if (!other || !other->is_static) // moving bodies are covered by their own vertex_face_contacts
+            {
+                continue;
+            }
+
+            std::vector<vec3> verts = other->get_vertices();
+            for (int k = 0; k < verts.size(); k++)
+            {
+                vec3 start = other->current_state.position + verts[k];
+                vec3 end = body.world_point(body.current_state, body.local_point(next, start));
+                vec3 direction = end - start;
+                double length = direction.length();
+                if (length < 1e-12)
+                {
+                    continue;
+                }
+                direction = direction / length;
+                ray r = ray(start, direction);
+
+                phy_hit_record rec;
+                if (body.hit(r, interval(0.001, length + RIGID_SKIN), rec))
+                {
+                    rigid_contact c;
+                    c.p = start;
+                    c.n = -rec.normal; 
+                    c.gap = rec.t * -dot(direction, rec.normal);
+                    c.other = other;
+                    contacts.push_back(c);
+                }
+            }
+        }
+    }
+
+    // effective inverse mass of the contact along d (both bodies)
+    double rigid_impulse_denominator(model &a, state &sa, const vec3 &ra, std::shared_ptr<model> &b, const vec3 &rb, const vec3 &d)
+    {
+        double k = 1.0 / a.mass + dot(d, cross(a.apply_inv_inertia(sa, cross(ra, d)), ra));
+        if (b)
+        {
+            k += 1.0 / b->mass + dot(d, cross(b->apply_inv_inertia(b->next_state, cross(rb, d)), rb));
+        }
+        return k;
+    }
+
+    void rigid_contact_impulse(model &a, state &sa, rigid_contact &c)
+    {
+        std::shared_ptr<model> b = std::dynamic_pointer_cast<model>(c.other);
+        if (b && (!b->is_rigid_body || b->is_static)) 
+        {
+            b = nullptr;
+        }
+
+        vec3 ra = c.p - a.com_world(sa);
+        vec3 va = sa.velocity + cross(sa.angular_velocity, ra);
+        vec3 rb = vec3(0);
+        vec3 vb = vec3(0);
+        if (b)
+        {
+            rb = c.p - b->com_world(b->next_state);
+            vb = b->next_state.velocity + cross(b->next_state.angular_velocity, rb);
+        }
+
+        vec3 rel_vel = va - vb;
+        double v_normal = dot(rel_vel, c.n);
+        if (v_normal >= 0.0) // separating
+        {
+            return;
+        }
+
+        double restitution = std::min(a.restitution, c.other->restitution);
+        if (-v_normal < RESTING_THRESHOLD)
+        {
+            restitution = 0.0; // let it settle
+        }
+        double j_normal = -(1.0 + restitution) * v_normal / rigid_impulse_denominator(a, sa, ra, b, rb, c.n);
+        vec3 impulse = j_normal * c.n;
+
+        // coulomb friction
+        vec3 v_tangent = rel_vel - v_normal * c.n;
+        double tangent_speed = v_tangent.length();
+        if (tangent_speed > 1e-9)
+        {
+            vec3 t = v_tangent / tangent_speed;
+            double j_tangent = tangent_speed / rigid_impulse_denominator(a, sa, ra, b, rb, t);
+            double mu = std::max(a.friction, c.other->friction);
+            if (j_tangent > mu * j_normal)
+            {
+                j_tangent = mu * j_normal;
+            }
+            impulse += -j_tangent * t;
+        }
+
+        sa.velocity += impulse / a.mass;
+        sa.angular_velocity += a.apply_inv_inertia(sa, cross(ra, impulse));
+        if (b)
+        {
+            b->next_state.velocity += -impulse / b->mass;
+            b->next_state.angular_velocity += -b->apply_inv_inertia(b->next_state, cross(rb, impulse));
         }
     }
 

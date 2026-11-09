@@ -5,6 +5,7 @@ class material;
 
 #include "aabb.h"
 #include "texture.h"
+#include "quaternion.h"
 
 class hit_record
 {
