@@ -292,6 +292,7 @@ public:
         }
     }
 
+    //vertex to face contacts
     void vertex_face_contacts(model &body, int body_index, state &next, std::vector<rigid_contact> &contacts)
     {
         std::vector<vec3> verts = body.get_vertices();
