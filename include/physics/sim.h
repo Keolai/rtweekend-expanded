@@ -38,6 +38,12 @@ enum class soft_integrator
     velocity_verlet      // leapfrog (kick-drift-kick), needs the whole body
 };
 
+enum class rigid_integrator
+{
+    forward_euler,
+    semi_implicit_euler
+};
+
 #define RIGID_SKIN 0.01 // gap a rigid body is pushed back to when it gets closer than this
 #define RIGID_IMPULSE_PASSES 3
 
@@ -60,7 +66,8 @@ public:
 
     std::vector<shared_ptr<force>> forces;
     std::vector<std::shared_ptr<soft_model>> soft_bodies; // kept out of world so nodes don't hit their own triangles ehh
-    soft_integrator integrator = soft_integrator::forward_euler;
+    soft_integrator soft_integrator_type = soft_integrator::forward_euler;
+    rigid_integrator rigid_integrator_type = rigid_integrator::forward_euler;
 
     double step(double dt) // dt should be ms;
     {
@@ -248,10 +255,20 @@ public:
             state next = cur_model->current_state;
 
             // INTEGRATE TODO: add support for other integration schemes
-            vec3 f = get_net_force(next.position, next.velocity, cur_model->mass);
-            next.velocity += (f / cur_model->mass) * h;
-            next.position += next.velocity * h;
-            next.orientation = quat::integrate(next.orientation, next.angular_velocity, h);
+            // vec3 f = get_net_force(next.position, next.velocity, cur_model->mass);
+            // next.velocity += (f / cur_model->mass) * h;
+            // next.position += next.velocity * h;
+            // next.orientation = quat::integrate(next.orientation, next.angular_velocity, h);
+            switch (rigid_integrator_type)
+            {
+            case rigid_integrator::forward_euler:
+                forward_euler(cur_model, next, h);
+                break;
+            case rigid_integrator::semi_implicit_euler:
+            default:
+                semi_implicit_euler(cur_model, next, h);
+                break;
+            }
 
             std::vector<rigid_contact> contacts;
             vertex_face_contacts(*cur_model, i, next, contacts);
@@ -293,7 +310,7 @@ public:
         }
     }
 
-    //vertex to face contacts
+    // vertex to face contacts
     void vertex_face_contacts(model &body, int body_index, state &next, std::vector<rigid_contact> &contacts)
     {
         std::vector<vec3> verts = body.get_vertices();
@@ -341,7 +358,7 @@ public:
         }
     }
 
-   //for spikes
+    // for spikes
     void face_vertex_contacts(model &body, int body_index, state &next, std::vector<rigid_contact> &contacts)
     {
         for (int j = 0; j < world.size(); j++)
@@ -375,7 +392,7 @@ public:
                 {
                     rigid_contact c;
                     c.p = start;
-                    c.n = -rec.normal; 
+                    c.n = -rec.normal;
                     c.gap = rec.t * -dot(direction, rec.normal);
                     c.other = other;
                     contacts.push_back(c);
@@ -442,7 +459,7 @@ public:
     void rigid_contact_impulse(model &a, state &sa, rigid_contact &c)
     {
         std::shared_ptr<model> b = std::dynamic_pointer_cast<model>(c.other);
-        if (b && (!b->is_rigid_body || b->is_static)) 
+        if (b && (!b->is_rigid_body || b->is_static))
         {
             b = nullptr;
         }
@@ -894,17 +911,17 @@ private:
     // updates every node's vel and fills where each node wants to move, collision then decides where it ends up
     void integrate_soft_body(soft_model &body, double h, std::vector<vec3> &new_positions)
     {
-        if (integrator == soft_integrator::runge_kutta_4) // instead of a case in the normal integration function, but there is a catcher there
+        if (soft_integrator_type == soft_integrator::runge_kutta_4) // instead of a case in the normal integration function, but there is a catcher there
         {
             runge_kutta_four(body, h, new_positions);
             return;
         }
-        if (integrator == soft_integrator::heuns_method)
+        if (soft_integrator_type == soft_integrator::heuns_method)
         {
             heuns_method(body, h, new_positions);
             return;
         }
-        if (integrator == soft_integrator::velocity_verlet)
+        if (soft_integrator_type == soft_integrator::velocity_verlet)
         {
             velocity_verlet(body, h, new_positions);
             return;
@@ -922,7 +939,7 @@ private:
     // per node schemes, they only need the node's own force from the start of the step
     vec3 integrate_soft_node(soft_node &n, double h)
     {
-        switch (integrator)
+        switch (soft_integrator_type)
         {
         case soft_integrator::semi_implicit_euler:
             return semi_implicit_euler(n, h);
@@ -942,6 +959,7 @@ private:
         }
     }
 
+    // INTEGRATION SCHEMES - SOFT BODY ===================================
     vec3 forward_euler(soft_node &n, double h)
     {
         vec3 acc = n.force / n.mass;
@@ -1093,6 +1111,28 @@ private:
             nodes[i].pos = start_pos[i]; // put the body back
         }
     }
+    // END OF SOFT BODY INTEGRATION SCHEMES ==============================
+
+    // RIGID BODY INTEGRATION ======================================
+
+    void forward_euler(std::shared_ptr<model> &cur_model, state &next, double h)
+    {
+        vec3 f = get_net_force(next.position, next.velocity, cur_model->mass);
+        next.position += next.velocity * h;
+        next.orientation = quat::integrate(next.orientation, next.angular_velocity, h);
+        next.velocity += (f / cur_model->mass) * h;
+    }
+
+    // velocity first, then position with the new velocity
+    void semi_implicit_euler(std::shared_ptr<model> &cur_model, state &next, double h)
+    {
+        vec3 f = get_net_force(next.position, next.velocity, cur_model->mass);
+        next.velocity += (f / cur_model->mass) * h;
+        next.position += next.velocity * h;
+        next.orientation = quat::integrate(next.orientation, next.angular_velocity, h);
+    }
+
+    // END OF RIGID BODY INTEGRATION SCHEMES ============================
 
     void soft_node_collision(soft_model &body, soft_node &n, const vec3 &new_pos)
     {
