@@ -256,6 +256,7 @@ public:
             std::vector<rigid_contact> contacts;
             vertex_face_contacts(*cur_model, i, next, contacts);
             face_vertex_contacts(*cur_model, i, next, contacts);
+            edge_edge_contacts(*cur_model, i, next, contacts);
 
             if (!contacts.empty())
             {
@@ -376,6 +377,50 @@ public:
                     c.p = start;
                     c.n = -rec.normal; 
                     c.gap = rec.t * -dot(direction, rec.normal);
+                    c.other = other;
+                    contacts.push_back(c);
+                }
+            }
+        }
+    }
+
+    // edge-edge for rigid body
+    void edge_edge_contacts(model &body, int body_index, state &next, std::vector<rigid_contact> &contacts)
+    {
+        std::vector<edge> local_edges = body.get_edges();
+        for (edge &le : local_edges)
+        {
+            // edge_hit wants world space, move the edge to the predicted pose
+            vec3 u = body.world_point(next, le.start());
+            vec3 v = body.world_point(next, le.end());
+            edge e;
+            e.u = &u;
+            e.v = &v;
+
+            for (int j = 0; j < world.size(); j++)
+            {
+                if (j == body_index)
+                {
+                    continue;
+                }
+                auto other = std::dynamic_pointer_cast<model>(world.objects[j]);
+                if (!other)
+                {
+                    continue;
+                }
+                // two moving bodies would find the same edge pair twice, the lower index handles it
+                if (other->is_rigid_body && !other->is_static && j < body_index)
+                {
+                    continue;
+                }
+
+                phy_hit_record rec;
+                if (other->edge_hit(e, rec))
+                {
+                    rigid_contact c;
+                    c.p = rec.p;
+                    c.n = rec.normal; // already points from other toward this edge
+                    c.gap = rec.t;
                     c.other = other;
                     contacts.push_back(c);
                 }

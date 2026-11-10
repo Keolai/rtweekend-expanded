@@ -25,7 +25,7 @@
 
 #define SIM_RATE_MS 10 //interval
 
-#define RECORDING true
+#define RECORDING false
 #define MAX_RECORDING_STEPS 600
 
 std::atomic<bool> running{true};
@@ -236,23 +236,23 @@ int main()
     // world.add(vis_emitter);
 
     //SOFT BODY DEMO
-    auto cloth = sim.add_cloth_to_world(4.0, 4.0, 15, 15, 1.0, true);
-    // set_stiffness(double stretch, double bend, double damping)
-    cloth->set_stiffness(80, 20, 2, 2);
-    vec3 cloth_pos(0, 8, 0);
-    cloth->position(cloth_pos);
-    sim.connect_soft_model(cloth, smile_mat, world);
+    // auto cloth = sim.add_cloth_to_world(4.0, 4.0, 15, 15, 1.0, true);
+    // // set_stiffness(double stretch, double bend, double damping)
+    // cloth->set_stiffness(80, 20, 2, 2);
+    // vec3 cloth_pos(0, 8, 0);
+    // cloth->position(cloth_pos);
+    // sim.connect_soft_model(cloth, smile_mat, world);
 
     // closed mesh
-    auto jelly = sim.add_soft_model_to_world("models/chicken.obj", 1.0, true);
-    //// set_stiffness(double stretch, double bend, double damping)
-    // the original (40, 10, 1) was tuned for the 8-node cube
-    jelly->set_stiffness(3000, 800, 6, 1000);
-    //jelly->set_stiffness(40,10,1); //rectangles and such
-    jelly->pressure = 500; // higher stiffness needs more pressure, but too high causes explosion
-    vec3 jelly_pos(0, 4, 0);
-    jelly->position(jelly_pos);
-    sim.connect_soft_model(jelly, chicken_mat, world); //
+    // auto jelly = sim.add_soft_model_to_world("models/chicken.obj", 1.0, true);
+    // //// set_stiffness(double stretch, double bend, double damping)
+    // // the original (40, 10, 1) was tuned for the 8-node cube
+    // jelly->set_stiffness(3000, 800, 6, 1000);
+    // //jelly->set_stiffness(40,10,1); //rectangles and such
+    // jelly->pressure = 500; // higher stiffness needs more pressure, but too high causes explosion
+    // vec3 jelly_pos(0, 4, 0);
+    // jelly->position(jelly_pos);
+    // sim.connect_soft_model(jelly, chicken_mat, world); //
 
     // big jelly to bounce on
     // auto big_jelly = sim.add_soft_model_to_world("models/big_jelly.obj", 1.0);
@@ -271,11 +271,11 @@ int main()
     // int model = sim.add_mesh_to_world("models/closed_cube.obj",true);
     // auto my_model = std::make_shared<mesh>("models/open_cube.obj",cube_mat,world);
 
-    // int cube_physics_id = sim.add_mesh_to_world("models/cube.obj",true);
-    // auto mySphere1 = std::make_shared<mesh>("models/cube.obj", met, world);
+    int cube_physics_id = sim.add_mesh_to_world("models/cube.obj",false,true,1.0,vec3(0,5,0));
+    auto mySphere1 = std::make_shared<mesh>("models/cube.obj", met, world);
 
-    // sim.connect_objects(mySphere1->id,cube_physics_id);
-    //sim.connect_objects(my_model->id, model);
+    sim.connect_objects(mySphere1->id,cube_physics_id);
+   // sim.connect_objects(my_model->id, model);
     //END OF CUBE FALLING
 
     // sim.connect_objects(mySphere2->id,sphere_physics_id_rigid);
