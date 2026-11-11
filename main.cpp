@@ -25,7 +25,7 @@
 
 #define SIM_RATE_MS 10 //interval
 
-#define RECORDING false
+#define RECORDING true
 #define MAX_RECORDING_STEPS 600
 
 std::atomic<bool> running{true};
@@ -271,8 +271,14 @@ int main()
     // int model = sim.add_mesh_to_world("models/closed_cube.obj",true);
     // auto my_model = std::make_shared<mesh>("models/open_cube.obj",cube_mat,world);
 
-    int cube_physics_id = sim.add_mesh_to_world("models/cube.obj",false,true,1.0,vec3(0,5,0));
-    auto mySphere1 = std::make_shared<mesh>("models/cube.obj", met, world);
+    int cube_physics_id = sim.add_mesh_to_world("models/rotated_rectangle.obj",false,true,1.0,vec3(0,6,0));
+    auto mySphere1 = std::make_shared<mesh>("models/rotated_rectangle.obj", met, world);
+
+
+    int rec_physics_id = sim.add_mesh_to_world("models/rectangle.obj",false,true,1.0,vec3(0,3,0));
+    auto myrec = std::make_shared<mesh>("models/rectangle.obj", met, world);
+
+    sim.connect_objects(myrec->id,rec_physics_id);
 
     sim.connect_objects(mySphere1->id,cube_physics_id);
    // sim.connect_objects(my_model->id, model);
@@ -294,7 +300,7 @@ int main()
     cam.max_depth = 25;
 
     cam.vfov = 70;
-    cam.lookfrom = point3(4, 4, 3); // 0 5 10 default
+    cam.lookfrom = point3(6, 4, 3); // 0 5 10 default
     cam.lookat = point3(0, 0, 0);
     cam.vup = vec3(0, 1, 0);
     cam.ambient = color(0.1);

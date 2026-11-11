@@ -411,38 +411,58 @@ public:
     void edge_edge_contacts(model &body, int body_index, state &next, std::vector<rigid_contact> &contacts)
     {
         std::vector<edge> local_edges = body.get_edges();
-        for (edge &le : local_edges)
+        for (int j = 0; j < world.size(); j++)
         {
-            // edge_hit wants world space, move the edge to the predicted pose
-            vec3 u = body.world_point(next, le.start());
-            vec3 v = body.world_point(next, le.end());
-            edge e;
-            e.u = &u;
-            e.v = &v;
-
-            for (int j = 0; j < world.size(); j++)
+            if (j == body_index)
             {
-                if (j == body_index)
+                continue;
+            }
+            auto other = std::dynamic_pointer_cast<model>(world.objects[j]);
+            if (!other)
+            {
+                continue;
+            }
+            // two moving bodies would find the same edge pair twice, the lower index handles it
+            if (other->is_rigid_body && !other->is_static && j < body_index)
+            {
+                continue;
+            }
+
+            // skip when vertex contact exists
+            bool has_vertex_contact = false;
+            for (rigid_contact &c : contacts)
+            {
+                if (c.other == world.objects[j])
                 {
-                    continue;
+                    has_vertex_contact = true;
+                    break;
                 }
-                auto other = std::dynamic_pointer_cast<model>(world.objects[j]);
-                if (!other)
-                {
-                    continue;
-                }
-                // two moving bodies would find the same edge pair twice, the lower index handles it
-                if (other->is_rigid_body && !other->is_static && j < body_index)
-                {
-                    continue;
-                }
+            }
+            if (has_vertex_contact)
+            {
+                continue;
+            }
+
+            vec3 away = body.com_world(next) - other->com_world(other->next_state);
+            for (edge &le : local_edges)
+            {
+                // edge_hit wants world space, move the edge to the predicted pose
+                vec3 u = body.world_point(next, le.start());
+                vec3 v = body.world_point(next, le.end());
+                edge e;
+                e.u = &u;
+                e.v = &v;
 
                 phy_hit_record rec;
                 if (other->edge_hit(e, rec))
                 {
                     rigid_contact c;
                     c.p = rec.p;
-                    c.n = rec.normal; // already points from other toward this edge
+                    c.n = rec.normal;
+                    if (dot(c.n, away) < 0.0) // touching edges give a cross product with no set sign
+                    {
+                        c.n = -c.n;
+                    }
                     c.gap = rec.t;
                     c.other = other;
                     contacts.push_back(c);
@@ -451,7 +471,7 @@ public:
         }
     }
 
-    // effective inverse mass of the contact along d (both bodies)
+    // effective inverse mass of the contact along d
     double rigid_impulse_denominator(model &a, state &sa, const vec3 &ra, std::shared_ptr<model> &b, const vec3 &rb, const vec3 &d)
     {
         double k = 1.0 / a.mass + dot(d, cross(a.apply_inv_inertia(sa, cross(ra, d)), ra));
