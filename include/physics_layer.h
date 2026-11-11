@@ -99,7 +99,12 @@ public:
 
     void set_soft_integrator(soft_integrator integrator)
     {
-        simulation.integrator = integrator;
+        simulation.soft_integrator_type = integrator;
+    }
+
+    void set_rigid_integrator(rigid_integrator integrator)
+    {
+        simulation.rigid_integrator_type = integrator;
     }
 
     void add_force(const vec3 &direction, double strength)

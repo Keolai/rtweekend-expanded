@@ -41,7 +41,8 @@ enum class soft_integrator
 enum class rigid_integrator
 {
     forward_euler,
-    semi_implicit_euler
+    semi_implicit_euler,
+    runge_kutta_4
 };
 
 #define RIGID_SKIN 0.01 // gap a rigid body is pushed back to when it gets closer than this
@@ -265,6 +266,11 @@ public:
                 forward_euler(cur_model, next, h);
                 break;
             case rigid_integrator::semi_implicit_euler:
+                semi_implicit_euler(cur_model, next, h);
+                break;
+            case rigid_integrator::runge_kutta_4:
+                runge_kutta_four(cur_model, next, h);
+                break;
             default:
                 semi_implicit_euler(cur_model, next, h);
                 break;
@@ -1129,6 +1135,39 @@ private:
         vec3 f = get_net_force(next.position, next.velocity, cur_model->mass);
         next.velocity += (f / cur_model->mass) * h;
         next.position += next.velocity * h;
+        next.orientation = quat::integrate(next.orientation, next.angular_velocity, h);
+    }
+
+    void runge_kutta_four(std::shared_ptr<model> &cur_model, state &next, double h)
+    {
+        double m = cur_model->mass;
+        vec3 x0 = next.position;
+        vec3 v0 = next.velocity;
+
+        // k1
+        vec3 k1_x = v0;
+        vec3 k1_v = get_net_force(x0, v0, m) / m;
+
+        // k2 - midpoint
+        vec3 x2 = x0 + k1_x * (h / 2.0);
+        vec3 v2 = v0 + k1_v * (h / 2.0);
+        vec3 k2_x = v2;
+        vec3 k2_v = get_net_force(x2, v2, m) / m;
+
+        // k3 - midpoint
+        vec3 x3 = x0 + k2_x * (h / 2.0);
+        vec3 v3 = v0 + k2_v * (h / 2.0);
+        vec3 k3_x = v3;
+        vec3 k3_v = get_net_force(x3, v3, m) / m;
+
+        // k4 - end !
+        vec3 x4 = x0 + k3_x * h;
+        vec3 v4 = v0 + k3_v * h;
+        vec3 k4_x = v4;
+        vec3 k4_v = get_net_force(x4, v4, m) / m;
+
+        next.position = x0 + (k1_x + 2.0 * k2_x + 2.0 * k3_x + k4_x) * (h / 6.0);
+        next.velocity = v0 + (k1_v + 2.0 * k2_v + 2.0 * k3_v + k4_v) * (h / 6.0);
         next.orientation = quat::integrate(next.orientation, next.angular_velocity, h);
     }
 
