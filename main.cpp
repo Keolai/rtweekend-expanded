@@ -26,7 +26,7 @@
 #define SIM_RATE_MS 10 // interval
 
 #define RECORDING true
-#define MAX_RECORDING_STEPS 1500
+#define MAX_RECORDING_STEPS 1000
 
 std::atomic<bool> running{true};
 std::mutex state_mutex;
@@ -194,22 +194,22 @@ int main()
 
     physics_layer sim;
 
-    // sim.add_force(vec3(0, -1, 0), 5.0); // gravity
+    sim.add_force(vec3(0, -1, 0), 5.0); // gravity
 
     sim.set_soft_integrator(soft_integrator::runge_kutta_4);
     sim.set_rigid_integrator(rigid_integrator::runge_kutta_4);
 
-    sim.add_vortex_force(vec3(0), vec3(0, 1, 0), 5);
-    sim.add_range_force(vec3(0), 2, 10);
+    // sim.add_vortex_force(vec3(0), vec3(0, 1, 0), 5);
+    // sim.add_range_force(vec3(0), 2, 10);
 
     // mesh teapot_Model = mesh("models/solid_teapot.obj", tex_mat, world); //this is to check stuff
     // int tea_physics = sim.add_mesh_to_world("models/solid_teapot.obj",true);
 
     // smiles
-    auto my_sphere = std::make_shared<sphere>(vec3(0), 1, smile_mat);
-    int sphere_physics = sim.add_sphere_to_world(vec3(0), 1, true);
-    sim.connect_objects(my_sphere->id, sphere_physics);
-    world.add(my_sphere);
+    // auto my_sphere = std::make_shared<sphere>(vec3(0), 1, smile_mat);
+    // int sphere_physics = sim.add_sphere_to_world(vec3(0), 1, true);
+    // sim.connect_objects(my_sphere->id, sphere_physics);
+    // world.add(my_sphere);
 
     // bowl
     //  auto bowl_Model = std::make_shared<mesh>("models/bowl.obj", tex_mat, world); //this is to check stuff
@@ -217,9 +217,9 @@ int main()
     //  sim.connect_objects(bowl_Model->id,bowl_physics);
 
     // plane
-    //   auto plane_Model = std::make_shared<mesh>("models/plane.obj", tex_mat, world); //this is to check stuff
-    //  int plane_physics = sim.add_mesh_to_world("models/plane.obj",true);
-    //  sim.connect_objects(plane_Model->id,plane_physics);
+    auto plane_Model = std::make_shared<mesh>("models/plane.obj", tex_mat, world); // this is to check stuff
+    int plane_physics = sim.add_mesh_to_world("models/plane.obj", true);
+    sim.connect_objects(plane_Model->id, plane_physics);
 
     // PARAMETERS=(const vec3 &position, const vec3 &direction, double spread, double speed, double flow, bool is_flock)
     // FLOCKING DEMO
@@ -271,13 +271,23 @@ int main()
     //  int model = sim.add_mesh_to_world("models/closed_cube.obj",true);
     //  auto my_model = std::make_shared<mesh>("models/open_cube.obj",cube_mat,world);
 
-    for (int i = 0; i < 10; i++)
-    {
-        int cube_physics_id1 = sim.add_mesh_to_world("models/chicken.obj", false, true, 0.5, vec3(i * 3, 4 + (i * 3), 1));
-        auto mycube1 = std::make_shared<mesh>("models/chicken.obj", chicken_mat, world);
+    // for (int i = 0; i < 10; i++)
+    // {
+    //     int cube_physics_id1 = sim.add_mesh_to_world("models/chicken.obj", false, true, 0.5, vec3(i * 3, 4 + (i * 3), 1));
+    //     auto mycube1 = std::make_shared<mesh>("models/chicken.obj", chicken_mat, world);
 
-        sim.connect_objects(mycube1->id, cube_physics_id1);
-    }
+    //     sim.connect_objects(mycube1->id, cube_physics_id1);
+    // }
+
+    int cube_physics_id1 = sim.add_mesh_to_world("models/cone.obj", false, true, 0.5, vec3(0, 2, 1));
+    auto mycube1 = std::make_shared<mesh>("models/cone.obj", met, world);
+
+    int chicken_physics_id1 = sim.add_mesh_to_world("models/bowl.obj", false, true, 0.5, vec3(0,8, 1));
+    auto mychicken1 = std::make_shared<mesh>("models/bowl.obj", second_mat, world);
+
+    sim.connect_objects(mychicken1->id, chicken_physics_id1);
+
+    sim.connect_objects(mycube1->id, cube_physics_id1);
 
     // sim.connect_objects(my_model->id, model);
     // END OF CUBE FALLING
@@ -298,8 +308,8 @@ int main()
     cam.max_depth = 25;
 
     cam.vfov = 70;
-    cam.lookfrom = point3(8, 3, 3); // 0 5 10 default
-    cam.lookat = point3(0, 0, 0);
+    cam.lookfrom = point3(5, 5, 3); // 0 5 10 default
+    cam.lookat = point3(0, 3, 0);
     cam.vup = vec3(0, 1, 0);
     cam.ambient = color(0.1);
     cam.image_resolution = 4;
