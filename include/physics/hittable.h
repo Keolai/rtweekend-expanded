@@ -19,6 +19,63 @@ struct edge
 
 class phy_hittable;
 
+// closest points between segments p1-q1 and p2-q2, s and t are how far along each one, returns squared distance!
+inline double closest_pt_seg_seg(const vec3 &p1, const vec3 &q1,
+                                 const vec3 &p2, const vec3 &q2,
+                                 double &s, double &t, vec3 &c1, vec3 &c2)
+{
+    vec3 d1 = q1 - p1, d2 = q2 - p2, r = p1 - p2;
+    double a = dot(d1, d1), e = dot(d2, d2), f = dot(d2, r);
+
+    if (a <= EDGE_TOLERANCE && e <= EDGE_TOLERANCE)
+    {
+        s = t = 0.0;
+    }
+    else if (a <= EDGE_TOLERANCE)
+    {
+        s = 0.0;
+        t = std::min(1.0, std::max(0.0, f / e));
+    }
+    else
+    {
+        double c = dot(d1, r);
+        if (e <= EDGE_TOLERANCE)
+        {
+            t = 0.0;
+            s = std::min(1.0, std::max(0.0, -c / a));
+        }
+        else
+        {
+            double b = dot(d1, d2);
+            double denom = a * e - b * b; // 0 when parallel
+            if (denom > EDGE_TOLERANCE)
+            {
+                s = std::min(1.0, std::max(0.0, (b * f - c * e) / denom));
+            }
+            else
+            {
+                s = 0.0;
+            }
+            t = (b * s + f) / e;
+            if (t < 0.0)
+            {
+                t = 0.0;
+                s = std::min(1.0, std::max(0.0, -c / a));
+            }
+            else if (t > 1.0)
+            {
+                t = 1.0;
+                s = std::min(1.0, std::max(0.0, (b - c) / a));
+            }
+        }
+    }
+    c1 = p1 + d1 * s;
+    c2 = p2 + d2 * t;
+    vec3 diff = c1 - c2;
+    return dot(diff, diff);
+}
+
+
 class phy_hit_record
 {
 public:
@@ -121,61 +178,6 @@ protected:
             rec.hit_object = shared_from_this();
         }
         return hit;
-    }
-
-    inline double closest_pt_seg_seg(const vec3 &p1, const vec3 &q1,
-                                     const vec3 &p2, const vec3 &q2,
-                                     double &s, double &t, vec3 &c1, vec3 &c2)
-    {
-        vec3 d1 = q1 - p1, d2 = q2 - p2, r = p1 - p2;
-        double a = dot(d1, d1), e = dot(d2, d2), f = dot(d2, r);
-
-        if (a <= EDGE_TOLERANCE && e <= EDGE_TOLERANCE)
-        {
-            s = t = 0.0;
-        }
-        else if (a <= EDGE_TOLERANCE)
-        {
-            s = 0.0;
-            t = std::min(1.0, std::max(0.0, f / e));
-        }
-        else
-        {
-            double c = dot(d1, r);
-            if (e <= EDGE_TOLERANCE)
-            {
-                t = 0.0;
-                s = std::min(1.0, std::max(0.0, -c / a));
-            }
-            else
-            {
-                double b = dot(d1, d2);
-                double denom = a * e - b * b; // 0 when parallel
-                if (denom > EDGE_TOLERANCE)
-                {
-                    s = std::min(1.0, std::max(0.0, (b * f - c * e) / denom));
-                }
-                else
-                {
-                    s = 0.0;
-                }
-                t = (b * s + f) / e;
-                if (t < 0.0)
-                {
-                    t = 0.0;
-                    s = std::min(1.0, std::max(0.0, -c / a));
-                }
-                else if (t > 1.0)
-                {
-                    t = 1.0;
-                    s = std::min(1.0, std::max(0.0, (b - c) / a));
-                }
-            }
-        }
-        c1 = p1 + d1 * s;
-        c2 = p2 + d2 * t;
-        vec3 diff = c1 - c2;
-        return dot(diff, diff);
     }
 };
 

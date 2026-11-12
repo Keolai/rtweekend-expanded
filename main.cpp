@@ -26,7 +26,7 @@
 #define SIM_RATE_MS 10 //interval
 
 #define RECORDING true
-#define MAX_RECORDING_STEPS 600
+#define MAX_RECORDING_STEPS 800
 
 std::atomic<bool> running{true};
 std::mutex state_mutex;
@@ -194,6 +194,7 @@ int main()
 
     sim.add_force(vec3(0, -1, 0), 5.0); // gravity
     sim.set_soft_integrator(soft_integrator::runge_kutta_4);
+    sim.set_rigid_integrator(rigid_integrator::runge_kutta_4);
     // the chicken-on-jelly collision needs the jelly far stiffer than 10ms/RK4 can handle in one
     // step without exploding; substepping runs soft-body integration at a finer internal rate
     // (raises the stiffness*dt^2/mass stability ceiling) without touching the rest of the sim
@@ -244,15 +245,15 @@ int main()
     // sim.connect_soft_model(cloth, smile_mat, world);
 
     // closed mesh
-    // auto jelly = sim.add_soft_model_to_world("models/chicken.obj", 1.0, true);
-    // //// set_stiffness(double stretch, double bend, double damping)
-    // // the original (40, 10, 1) was tuned for the 8-node cube
-    // jelly->set_stiffness(3000, 800, 6, 1000);
-    // //jelly->set_stiffness(40,10,1); //rectangles and such
-    // jelly->pressure = 500; // higher stiffness needs more pressure, but too high causes explosion
-    // vec3 jelly_pos(0, 4, 0);
-    // jelly->position(jelly_pos);
-    // sim.connect_soft_model(jelly, chicken_mat, world); //
+    auto jelly = sim.add_soft_model_to_world("models/chicken.obj", 1.0, true);
+    //// set_stiffness(double stretch, double bend, double damping)
+    // the original (40, 10, 1) was tuned for the 8-node cube
+    jelly->set_stiffness(3000, 800, 6, 1000);
+    //jelly->set_stiffness(40,10,1); //rectangles and such
+    jelly->pressure = 500; // higher stiffness needs more pressure, but too high causes explosion
+    vec3 jelly_pos(0,10, 1);
+    jelly->position(jelly_pos);
+    sim.connect_soft_model(jelly, chicken_mat, world); //
 
     // big jelly to bounce on
     // auto big_jelly = sim.add_soft_model_to_world("models/big_jelly.obj", 1.0);
@@ -271,12 +272,17 @@ int main()
     // int model = sim.add_mesh_to_world("models/closed_cube.obj",true);
     // auto my_model = std::make_shared<mesh>("models/open_cube.obj",cube_mat,world);
 
-    int cube_physics_id = sim.add_mesh_to_world("models/rotated_rectangle.obj",false,true,1.0,vec3(0,6,0));
+    int cube_physics_id = sim.add_mesh_to_world("models/rotated_rectangle.obj",false,true,300.0,vec3(0,6,0));
     auto mySphere1 = std::make_shared<mesh>("models/rotated_rectangle.obj", met, world);
 
 
-    int rec_physics_id = sim.add_mesh_to_world("models/rectangle.obj",false,true,1.0,vec3(0,3,0));
+    int rec_physics_id = sim.add_mesh_to_world("models/rectangle.obj",false,true,300.0,vec3(0,3,0));
     auto myrec = std::make_shared<mesh>("models/rectangle.obj", met, world);
+
+    // int cube_physics_id1 = sim.add_mesh_to_world("models/cube.obj",false,true,1.0,vec3(0,8,1));
+    // auto mycube1 = std::make_shared<mesh>("models/cube.obj", met, world);
+
+    // sim.connect_objects(mycube1->id,cube_physics_id1);
 
     sim.connect_objects(myrec->id,rec_physics_id);
 

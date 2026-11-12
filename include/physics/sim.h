@@ -16,6 +16,7 @@
 #include "flock_behaviors/sph.h"
 #include "flock_behaviors/gross.h"
 
+#include <algorithm>     // std::stable_partition
 #include <map>           // Required for std::map
 #include <unordered_map> // Required for std::unordered_map
 #include <chrono>
@@ -46,7 +47,8 @@ enum class rigid_integrator
 };
 
 #define RIGID_SKIN 0.01 // gap a rigid body is pushed back to when it gets closer than this
-#define RIGID_IMPULSE_PASSES 3
+#define RIGID_IMPULSE_PASSES 3 //loop
+#define RIGID_BACKTRACK 0.05 // how far under a face a vertex can sink
 
 struct rigid_contact
 {
@@ -283,6 +285,10 @@ public:
 
             if (!contacts.empty())
             {
+                // static contacts last 
+                std::stable_partition(contacts.begin(), contacts.end(), [](const rigid_contact &c)
+                                      { return !c.other->is_static; });
+
                 // sequential impulses to let things settle
                 for (int pass = 0; pass < RIGID_IMPULSE_PASSES; pass++)
                 {
@@ -297,23 +303,38 @@ public:
                 next.orientation = quat::integrate(cur_model->current_state.orientation, next.angular_velocity, h);
 
                 // only push out when closer than the skin to prevent creep
-                rigid_contact *closest = &contacts[0];
+                rigid_contact *deepest = &contacts[0];
                 for (rigid_contact &c : contacts)
                 {
-                    if (c.gap < closest->gap)
+                    if (c.gap < deepest->gap)
                     {
-                        closest = &c;
+                        deepest = &c;
                     }
                 }
-                if (closest->gap < RIGID_SKIN)
+                if (deepest->gap < RIGID_SKIN)
                 {
-                    next.position += closest->n * (RIGID_SKIN - closest->gap);
+                    push_apart(*cur_model, next, *deepest);
                 }
             }
 
             copy(next, cur_model->next_state);
             cur_model->set_transform(cur_model->next_state); // collision faces follow the body
         }
+    }
+
+    // moves the body back out to surface
+    void push_apart(model &body, state &next, rigid_contact &c)
+    {
+        double push = RIGID_SKIN - c.gap;
+        auto other = std::dynamic_pointer_cast<model>(c.other);
+        if (other && other->is_rigid_body && !other->is_static)
+        {
+            double other_share = body.mass / (body.mass + other->mass); // lighter body moves more
+            other->next_state.position += -c.n * (push * other_share);
+            other->set_transform(other->next_state);
+            push = push * (1.0 - other_share);
+        }
+        next.position += c.n * push;
     }
 
     // vertex to face contacts
@@ -331,13 +352,14 @@ public:
                 continue;
             }
             direction = direction / length;
-            ray r = ray(start, direction);
+            // start a little behind the vertex...
+            ray r = ray(start - direction * RIGID_BACKTRACK, direction);
 
             // DO NOT USE THE BVH
             phy_hit_record rec;
             phy_hit_record temp_rec;
             std::shared_ptr<phy_hittable> hit_object;
-            double closest_so_far = length + RIGID_SKIN;
+            double closest_so_far = RIGID_BACKTRACK + length + RIGID_SKIN;
             for (int j = 0; j < world.size(); j++)
             {
                 if (j == body_index || !world.objects[j])
@@ -346,6 +368,11 @@ public:
                 }
                 if (world.objects[j]->hit(r, interval(0.001, closest_so_far), temp_rec))
                 {
+                    // behind the vertex and from the inside means it's moving away from that face
+                    if (temp_rec.t < RIGID_BACKTRACK && !temp_rec.front_face)
+                    {
+                        continue;
+                    }
                     closest_so_far = temp_rec.t;
                     rec = temp_rec;
                     hit_object = world.objects[j];
@@ -357,7 +384,7 @@ public:
                 rigid_contact c;
                 c.p = rec.p;
                 c.n = rec.normal; // already faces back toward the vertex
-                c.gap = rec.t * -dot(direction, rec.normal);
+                c.gap = (rec.t - RIGID_BACKTRACK) * -dot(direction, rec.normal); // negative when the vertex started inside
                 c.other = hit_object;
                 contacts.push_back(c);
             }
@@ -428,42 +455,46 @@ public:
                 continue;
             }
 
-            // skip when vertex contact exists
-            bool has_vertex_contact = false;
-            for (rigid_contact &c : contacts)
-            {
-                if (c.other == world.objects[j])
-                {
-                    has_vertex_contact = true;
-                    break;
-                }
-            }
-            if (has_vertex_contact)
-            {
-                continue;
-            }
-
+            // the model's own edges, not the triangle sides, so the diagonals of flat quads don't count
+            std::vector<edge> other_edges = other->get_edges();
             vec3 away = body.com_world(next) - other->com_world(other->next_state);
             for (edge &le : local_edges)
             {
-                // edge_hit wants world space, move the edge to the predicted pose
-                vec3 u = body.world_point(next, le.start());
-                vec3 v = body.world_point(next, le.end());
-                edge e;
-                e.u = &u;
-                e.v = &v;
-
-                phy_hit_record rec;
-                if (other->edge_hit(e, rec))
+                vec3 a0 = body.world_point(next, le.start());
+                vec3 a1 = body.world_point(next, le.end());
+                for (edge &oe : other_edges)
                 {
-                    rigid_contact c;
-                    c.p = rec.p;
-                    c.n = rec.normal;
-                    if (dot(c.n, away) < 0.0) // touching edges give a cross product with no set sign
+                    // next_state is where the other body's triangles currently are
+                    vec3 b0 = other->world_point(other->next_state, oe.start());
+                    vec3 b1 = other->world_point(other->next_state, oe.end());
+
+                    double s, t;
+                    vec3 on_mine, on_other;
+                    double d2 = closest_pt_seg_seg(a0, a1, b0, b1, s, t, on_mine, on_other);
+                    if (d2 >= EDGE_THICKNESS * EDGE_THICKNESS)
                     {
-                        c.n = -c.n;
+                        continue;
                     }
-                    c.gap = rec.t;
+                    // closest at an end is a vertex, vertex_face_contacts handles those
+                    if (s <= 0.0 || s >= 1.0 || t <= 0.0 || t >= 1.0)
+                    {
+                        continue;
+                    }
+                    vec3 n = cross(a1 - a0, b1 - b0);
+                    if (n.length_squared() < EDGE_TOLERANCE) // parallel
+                    {
+                        continue;
+                    }
+                    n = unit_vector(n);
+                    if (dot(n, away) < 0.0)
+                    {
+                        n = -n;
+                    }
+
+                    rigid_contact c;
+                    c.p = on_other;
+                    c.n = n;
+                    c.gap = dot(on_mine - on_other, n); // negative once the edges have crossed
                     c.other = other;
                     contacts.push_back(c);
                 }
@@ -1193,6 +1224,41 @@ private:
 
     // END OF RIGID BODY INTEGRATION SCHEMES ============================
 
+    // the hit record has the triangle, its id is the model it belongs to
+    std::shared_ptr<model> moving_rigid_body(int id)
+    {
+        for (auto &o : world.objects)
+        {
+            if (o && o->id == id && o->is_rigid_body && !o->is_static)
+            {
+                return std::static_pointer_cast<model>(o);
+            }
+        }
+        return nullptr;
+    }
+
+    // soft node hitting a moving rigid body, both get an equal and opposite impulse
+    void soft_rigid_response(soft_model &body, soft_node &n, model &rigid, const vec3 &p, const vec3 &normal)
+    {
+        vec3 r = p - rigid.com_world(rigid.next_state);
+        vec3 rigid_vel = rigid.next_state.velocity + cross(rigid.next_state.angular_velocity, r);
+        vec3 rel_vel = n.vel - rigid_vel;
+        double v_normal = dot(rel_vel, normal); // normal points from the rigid face toward the node
+        if (v_normal >= 0.0)
+        {
+            return;
+        }
+
+        std::shared_ptr<model> no_other;
+        double k = 1.0 / n.mass + rigid_impulse_denominator(rigid, rigid.next_state, r, no_other, vec3(0), normal);
+        vec3 impulse = (-(1.0 + body.restitution) * v_normal / k) * normal;
+
+        n.vel += impulse / n.mass;
+        n.vel += -(rel_vel - v_normal * normal) * body.friction; // same tangent damping as a static hit
+        rigid.next_state.velocity += -impulse / rigid.mass;
+        rigid.next_state.angular_velocity += -rigid.apply_inv_inertia(rigid.next_state, cross(r, impulse));
+    }
+
     void soft_node_collision(soft_model &body, soft_node &n, const vec3 &new_pos)
     {
         vec3 direction = new_pos - n.pos;
@@ -1208,12 +1274,20 @@ private:
         if (world_bvh->hit(r, interval(0.001, length + 0.01), rec))
         {
             vec3 normal = rec.normal;
-            double v_dot_n = dot(n.vel, normal);
-            if (v_dot_n < 0) // moving into the surface
+            std::shared_ptr<model> rigid = moving_rigid_body(rec.hit_object->id);
+            if (rigid)
             {
-                vec3 v_normal = v_dot_n * normal;
-                vec3 v_tangent = n.vel - v_normal;
-                n.vel = v_tangent * (1.0 - body.friction) - body.restitution * v_normal;
+                soft_rigid_response(body, n, *rigid, rec.p, normal);
+            }
+            else
+            {
+                double v_dot_n = dot(n.vel, normal);
+                if (v_dot_n < 0) // moving into the surface
+                {
+                    vec3 v_normal = v_dot_n * normal;
+                    vec3 v_tangent = n.vel - v_normal;
+                    n.vel = v_tangent * (1.0 - body.friction) - body.restitution * v_normal;
+                }
             }
             n.pos = rec.p + normal * 0.01;
         }
