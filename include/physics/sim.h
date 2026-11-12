@@ -582,6 +582,11 @@ public:
             }
 
             std::vector<vec3> object_vertices = cur_object->get_vertices();
+            std::shared_ptr<model> rigid;
+            if (cur_object->is_rigid_body)
+            {
+                rigid = std::static_pointer_cast<model>(cur_object);
+            }
             for (int s = 0; s < soft_bodies.size(); s++)
             {
                 soft_model &soft_body = *soft_bodies[s];
@@ -589,6 +594,11 @@ public:
                 {
                     vec3 vertex_pos = cur_object->current_state.position + object_vertices[k];
                     vec3 vertex_next_pos = cur_object->next_state.position + object_vertices[k];
+                    if (rigid)
+                    {
+                        vertex_pos = rigid->world_point(rigid->current_state, object_vertices[k]);
+                        vertex_next_pos = rigid->world_point(rigid->next_state, object_vertices[k]);
+                    }
                     vec3 direction = vertex_next_pos - vertex_pos;
                     double length = direction.length();
                     if (length < 1e-12)
