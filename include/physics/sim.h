@@ -257,11 +257,7 @@ public:
             cur_model->update_state();
             state next = cur_model->current_state;
 
-            // INTEGRATE TODO: add support for other integration schemes
-            // vec3 f = get_net_force(next.position, next.velocity, cur_model->mass);
-            // next.velocity += (f / cur_model->mass) * h;
-            // next.position += next.velocity * h;
-            // next.orientation = quat::integrate(next.orientation, next.angular_velocity, h);
+            // INTEGRATE
             switch (rigid_integrator_type)
             {
             case rigid_integrator::forward_euler:
@@ -298,7 +294,7 @@ public:
                     }
                 }
 
-                // redo the move from the start pose with the new velocities
+                // redo the move from the start posisiton with the new velocities
                 next.position = cur_model->current_state.position + next.velocity * h;
                 next.orientation = quat::integrate(cur_model->current_state.orientation, next.angular_velocity, h);
 

@@ -23,10 +23,10 @@
 #include <chrono>
 #include <mutex>
 
-#define SIM_RATE_MS 10 //interval
+#define SIM_RATE_MS 10 // interval
 
 #define RECORDING true
-#define MAX_RECORDING_STEPS 800
+#define MAX_RECORDING_STEPS 1500
 
 std::atomic<bool> running{true};
 std::mutex state_mutex;
@@ -41,10 +41,12 @@ std::vector<std::shared_ptr<text_box>> inputs;
 
 std::atomic<bool> run_sim{false};
 
-std::string pad_integer(int num, int width) {
+std::string pad_integer(int num, int width)
+{
     std::string tmp = std::to_string(num);
 
-    if (tmp.length() < width) {
+    if (tmp.length() < width)
+    {
         tmp = std::string(width - tmp.length(), '0') + tmp;
     }
 
@@ -58,9 +60,9 @@ void write_to_file(int image_width, int image_height, int step)
     {
         file_name = "out";
     }
-    else if (RECORDING) //override it
+    else if (RECORDING) // override it
     {
-        file_name = "recording/out" + pad_integer(step,4);
+        file_name = "recording/out" + pad_integer(step, 4);
     }
     std::ofstream myFile(file_name + ".ppm");
     if (myFile.is_open())
@@ -72,7 +74,7 @@ void write_to_file(int image_width, int image_height, int step)
             write_color(myFile, color_buffer[i]);
         }
     }
-    printf("%s\n",file_name.c_str());
+    printf("%s\n", file_name.c_str());
     myFile.close();
 }
 
@@ -167,8 +169,8 @@ void physics_thread_func(physics_layer &sim, std::chrono::milliseconds interval)
         {
             sim.step(interval.count()); // locking now happens inside step()
         }
-         auto now = std::chrono::steady_clock::now();
-        if (next_tick < now) //to fix overrunning
+        auto now = std::chrono::steady_clock::now();
+        if (next_tick < now) // to fix overrunning
         {
             next_tick = now + std::chrono::milliseconds(1);
         }
@@ -180,9 +182,9 @@ int main()
 {
     //* DEFINE WORLD HERE *//
     hittable_list world;
-    auto met = make_shared<metal>(color(0.8, 0.8, 0.8), 0.1);      // teapot material
-    auto mat = make_shared<lambertian>(color(0.5, 0.5, 0.0));      // world material
-    auto second_mat = make_shared<lambertian>(color(0.7, 0.0, 0.0)); 
+    auto met = make_shared<metal>(color(0.8, 0.8, 0.8), 0.1); // teapot material
+    auto mat = make_shared<lambertian>(color(0.5, 0.5, 0.0)); // world material
+    auto second_mat = make_shared<lambertian>(color(0.7, 0.0, 0.0));
     auto cube_mat = make_shared<lambertian>(color(0.5, 0.5, 0.5)); // world material
     auto em = make_shared<emmissive>(color(0.5));
     auto tex_mat = make_shared<metal>("models/textures/checkered.ppm", 0.1);
@@ -192,68 +194,65 @@ int main()
 
     physics_layer sim;
 
-    sim.add_force(vec3(0, -1, 0), 5.0); // gravity
+    // sim.add_force(vec3(0, -1, 0), 5.0); // gravity
+
     sim.set_soft_integrator(soft_integrator::runge_kutta_4);
     sim.set_rigid_integrator(rigid_integrator::runge_kutta_4);
-    // the chicken-on-jelly collision needs the jelly far stiffer than 10ms/RK4 can handle in one
-    // step without exploding; substepping runs soft-body integration at a finer internal rate
-    // (raises the stiffness*dt^2/mass stability ceiling) without touching the rest of the sim
-    // sim.add_vortex_force(vec3(0),vec3(0,1,0),5);
-    // sim.add_range_force(vec3(0),2,10);
+
+    sim.add_vortex_force(vec3(0), vec3(0, 1, 0), 5);
+    sim.add_range_force(vec3(0), 2, 10);
 
     // mesh teapot_Model = mesh("models/solid_teapot.obj", tex_mat, world); //this is to check stuff
     // int tea_physics = sim.add_mesh_to_world("models/solid_teapot.obj",true);
 
-    //smiles
-    // auto my_sphere = std::make_shared<sphere>(vec3(0),1,smile_mat);
-    // int sphere_physics = sim.add_sphere_to_world(vec3(0),1,true);
-    // sim.connect_objects(my_sphere->id,sphere_physics);
-    // world.add(my_sphere);
+    // smiles
+    auto my_sphere = std::make_shared<sphere>(vec3(0), 1, smile_mat);
+    int sphere_physics = sim.add_sphere_to_world(vec3(0), 1, true);
+    sim.connect_objects(my_sphere->id, sphere_physics);
+    world.add(my_sphere);
 
-    //bowl
-    // auto bowl_Model = std::make_shared<mesh>("models/bowl.obj", tex_mat, world); //this is to check stuff
-    // int bowl_physics = sim.add_mesh_to_world("models/bowl.obj",true);
-    // sim.connect_objects(bowl_Model->id,bowl_physics);
+    // bowl
+    //  auto bowl_Model = std::make_shared<mesh>("models/bowl.obj", tex_mat, world); //this is to check stuff
+    //  int bowl_physics = sim.add_mesh_to_world("models/bowl.obj",true);
+    //  sim.connect_objects(bowl_Model->id,bowl_physics);
 
-    //plane
-     auto plane_Model = std::make_shared<mesh>("models/plane.obj", tex_mat, world); //this is to check stuff
-    int plane_physics = sim.add_mesh_to_world("models/plane.obj",true);
-    sim.connect_objects(plane_Model->id,plane_physics);
+    // plane
+    //   auto plane_Model = std::make_shared<mesh>("models/plane.obj", tex_mat, world); //this is to check stuff
+    //  int plane_physics = sim.add_mesh_to_world("models/plane.obj",true);
+    //  sim.connect_objects(plane_Model->id,plane_physics);
 
-    
+    // PARAMETERS=(const vec3 &position, const vec3 &direction, double spread, double speed, double flow, bool is_flock)
+    // FLOCKING DEMO
+    //  particle_emitter& emitter = sim.add_particle_emitter(vec3(0,4,0),vec3(0,-1,0),0.1,1,500,true);
+    //  emitter.behavior = emitter_behavior::flocking;
+    //  auto vis_emitter = std::make_shared<metaball>(emitter.particles,smile_mat, 0.1);
 
-    //PARAMETERS=(const vec3 &position, const vec3 &direction, double spread, double speed, double flow, bool is_flock)
- //FLOCKING DEMO
-    // particle_emitter& emitter = sim.add_particle_emitter(vec3(0,4,0),vec3(0,-1,0),0.1,1,500,true);
-    // emitter.behavior = emitter_behavior::flocking;
-    // auto vis_emitter = std::make_shared<metaball>(emitter.particles,smile_mat, 0.1);
+    // PREDATOR/PREY DEMO
+    //  particle_emitter& emitter = sim.add_particle_emitter(vec3(0,4,0),vec3(0,-1,0),0,1,500,true);
+    //  emitter.behavior = emitter_behavior::fluid;
+    //  auto vis_emitter = std::make_shared<particle_container>(emitter.particles,smile_mat, second_mat, 0.2);
 
-    //PREDATOR/PREY DEMO
-    // particle_emitter& emitter = sim.add_particle_emitter(vec3(0,4,0),vec3(0,-1,0),0,1,500,true);
-    // emitter.behavior = emitter_behavior::fluid;
-    // auto vis_emitter = std::make_shared<particle_container>(emitter.particles,smile_mat, second_mat, 0.2);
+    // auto vis_emitter = std::make_shared<particle_mesh_container>(emitter.particles, "models/ufo.obj", ufo_mat, 0.30);
+    //  world.add(vis_emitter);
 
-    //auto vis_emitter = std::make_shared<particle_mesh_container>(emitter.particles, "models/ufo.obj", ufo_mat, 0.30);
-    // world.add(vis_emitter);
-
-    //SOFT BODY DEMO
-    // auto cloth = sim.add_cloth_to_world(4.0, 4.0, 15, 15, 1.0, true);
-    // // set_stiffness(double stretch, double bend, double damping)
-    // cloth->set_stiffness(80, 20, 2, 2);
-    // vec3 cloth_pos(0, 8, 0);
-    // cloth->position(cloth_pos);
-    // sim.connect_soft_model(cloth, smile_mat, world);
+    // SOFT BODY DEMO
+    //  auto cloth = sim.add_cloth_to_world(4.0, 4.0, 15, 15, 1.0, true);
+    //  // set_stiffness(double stretch, double bend, double damping)
+    //  cloth->set_stiffness(80, 20, 2, 2);
+    //  vec3 cloth_pos(0, 8, 0);
+    //  cloth->position(cloth_pos);
+    //  sim.connect_soft_model(cloth, smile_mat, world);
 
     // closed mesh
-    auto jelly = sim.add_soft_model_to_world("models/chicken.obj", 1.0, true);
-    //// set_stiffness(double stretch, double bend, double damping)
-    // the original (40, 10, 1) was tuned for the 8-node cube
-    jelly->set_stiffness(3000, 800, 6, 1000);
-    //jelly->set_stiffness(40,10,1); //rectangles and such
-    jelly->pressure = 500; // higher stiffness needs more pressure, but too high causes explosion
-    vec3 jelly_pos(0,10, 1);
-    jelly->position(jelly_pos);
-    sim.connect_soft_model(jelly, chicken_mat, world); //
+    // auto jelly = sim.add_soft_model_to_world("models/chicken.obj", 1.0, true);
+    // //// set_stiffness(double stretch, double bend, double damping)
+    // // the original (40, 10, 1) was tuned for the 8-node cube
+    // jelly->set_stiffness(3000, 800, 6, 1000);
+    // // jelly->set_stiffness(40,10,1); //rectangles and such
+    // jelly->pressure = 500; // higher stiffness needs more pressure, but too high causes explosion
+    // vec3 jelly_pos(0, 10, 1);
+    // jelly->position(jelly_pos);
+    // sim.connect_soft_model(jelly, chicken_mat, world); //
 
     // big jelly to bounce on
     // auto big_jelly = sim.add_soft_model_to_world("models/big_jelly.obj", 1.0);
@@ -267,28 +266,21 @@ int main()
     // auto sec_vis_emitter = std::make_shared<metaball>(sec_emitter.particles,second_mat, 0.2);
     // world.add(sec_vis_emitter);
 
-    //CUBE FALLING DEMO
-    // sim.add_force(vec3(0,10,0),1);
-    // int model = sim.add_mesh_to_world("models/closed_cube.obj",true);
-    // auto my_model = std::make_shared<mesh>("models/open_cube.obj",cube_mat,world);
+    // CUBE FALLING DEMO
+    //  sim.add_force(vec3(0,10,0),1);
+    //  int model = sim.add_mesh_to_world("models/closed_cube.obj",true);
+    //  auto my_model = std::make_shared<mesh>("models/open_cube.obj",cube_mat,world);
 
-    int cube_physics_id = sim.add_mesh_to_world("models/rotated_rectangle.obj",false,true,300.0,vec3(0,6,0));
-    auto mySphere1 = std::make_shared<mesh>("models/rotated_rectangle.obj", met, world);
+    for (int i = 0; i < 10; i++)
+    {
+        int cube_physics_id1 = sim.add_mesh_to_world("models/chicken.obj", false, true, 0.5, vec3(i * 3, 4 + (i * 3), 1));
+        auto mycube1 = std::make_shared<mesh>("models/chicken.obj", chicken_mat, world);
 
+        sim.connect_objects(mycube1->id, cube_physics_id1);
+    }
 
-    int rec_physics_id = sim.add_mesh_to_world("models/rectangle.obj",false,true,300.0,vec3(0,3,0));
-    auto myrec = std::make_shared<mesh>("models/rectangle.obj", met, world);
-
-    // int cube_physics_id1 = sim.add_mesh_to_world("models/cube.obj",false,true,1.0,vec3(0,8,1));
-    // auto mycube1 = std::make_shared<mesh>("models/cube.obj", met, world);
-
-    // sim.connect_objects(mycube1->id,cube_physics_id1);
-
-    sim.connect_objects(myrec->id,rec_physics_id);
-
-    sim.connect_objects(mySphere1->id,cube_physics_id);
-   // sim.connect_objects(my_model->id, model);
-    //END OF CUBE FALLING
+    // sim.connect_objects(my_model->id, model);
+    // END OF CUBE FALLING
 
     // sim.connect_objects(mySphere2->id,sphere_physics_id_rigid);
 
@@ -306,7 +298,7 @@ int main()
     cam.max_depth = 25;
 
     cam.vfov = 70;
-    cam.lookfrom = point3(6, 4, 3); // 0 5 10 default
+    cam.lookfrom = point3(8, 3, 3); // 0 5 10 default
     cam.lookat = point3(0, 0, 0);
     cam.vup = vec3(0, 1, 0);
     cam.ambient = color(0.1);
@@ -334,7 +326,7 @@ int main()
 
     double total_ns = 0;
 
-    if (!RECORDING) //run normally
+    if (!RECORDING) // run normally
     {
 
         std::thread physics_thread(physics_thread_func, std::ref(sim),
@@ -344,7 +336,7 @@ int main()
         {
             // printf("running!\n");
             sim.update_render();
-            world_bvh->rebuild(world.objects); //ehhh
+            world_bvh->rebuild(world.objects); // ehhh
             win.update();
             cam.render(*world_bvh, color_buffer, win); // TODO: FIX THIS
         }
@@ -365,10 +357,10 @@ int main()
             sim.update_render();
             world_bvh->rebuild(world.objects);
             cam.render(*world_bvh, color_buffer, win);
-            write_to_file(cam.image_width, cam.get_height(), sim.get_step());   
+            write_to_file(cam.image_width, cam.get_height(), sim.get_step());
             cur_step++;
         }
         total_ns += sim.total_ns;
     }
-    printf("Average physics rendering time: %f ns\n", (total_ns/sim.get_steps()));
+    printf("Average physics rendering time: %f ns\n", (total_ns / sim.get_steps()));
 }
